@@ -6,8 +6,13 @@ const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+// Only load .env file in development; in production (Render), env vars are injected by the platform
+const envPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
 
 const app = express();
 

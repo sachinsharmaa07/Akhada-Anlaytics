@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const { protect } = require('../middleware/authMiddleware');
-require('dotenv').config();
 
 /* ═══════════════════════════════════════════════════════
    Helpers

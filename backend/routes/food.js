@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-require('dotenv').config();
 
 const indianFoods = [
   { id: 'ind1', name: 'Dal (Lentils)', calories: 116, protein: 9, carbs: 20, fats: 0.4, fiber: 8 },

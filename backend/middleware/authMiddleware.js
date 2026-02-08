@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-require('dotenv').config();
 
 /**
  * Extract JWT from Authorization header OR httpOnly cookie
