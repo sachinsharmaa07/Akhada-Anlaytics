@@ -1,0 +1,24 @@
+.macro-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.macro-ring svg { display: block; }
+.macro-ring__progress { transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1); }
+.macro-ring__value {
+  fill: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+}
+.macro-ring__label {
+  fill: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.macro-ring__goal {
+  fill: var(--text-muted);
+  font-family: 'Exo 2', sans-serif;
+  opacity: 0.7;
+}

@@ -1,0 +1,270 @@
+/* ──────────────────────────────────────────────────
+   WorkoutLog — exercise search, sets, auto-fill
+   ────────────────────────────────────────────────── */
+.workout-log { display: flex; flex-direction: column; gap: var(--space-lg); }
+
+/* ── Header ── */
+.workout-log__header { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+.workout-log__timer {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  color: var(--neon-pink); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem;
+  background: rgba(255, 45, 117, 0.08);
+  padding: 4px 12px; border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 45, 117, 0.2);
+}
+
+/* ── Stats bar ── */
+.workout-log__stats {
+  display: flex; gap: var(--space-md); flex-wrap: wrap;
+}
+.workout-log__stat {
+  flex: 1; min-width: 100px;
+  background: rgba(15, 20, 30, 0.6);
+  border: 1px solid rgba(100, 150, 255, 0.12);
+  border-radius: var(--radius-md); padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.workout-log__stat-label {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted); font-weight: 600;
+}
+.workout-log__stat-value {
+  font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Add exercise card ── */
+.workout-log__add-exercise h3 {
+  color: var(--text-primary); margin-bottom: var(--space-sm);
+  font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.workout-log__manual-toggle {
+  margin-top: var(--space-xs); font-size: 0.75rem !important; opacity: 0.7;
+}
+.workout-log__manual-row {
+  display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-sm);
+}
+.workout-log__manual-row .input { flex: 1; min-width: 140px; }
+
+/* ══════════════════════════════════════════════════
+   EXERCISE SEARCH — Enhanced with filters & anims
+   ══════════════════════════════════════════════════ */
+.ex-search { position: relative; width: 100%; }
+.ex-search__input-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.ex-search__icon {
+  position: absolute; left: 12px;
+  color: var(--text-muted); pointer-events: none;
+}
+.ex-search__input {
+  padding-left: 36px !important; width: 100%;
+}
+.ex-search__clear {
+  position: absolute; right: 10px;
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; padding: 4px;
+  border-radius: 50%; transition: all 0.2s;
+}
+.ex-search__clear:hover { color: var(--neon-pink); background: rgba(255,45,117,0.1); }
+
+/* ── Combined panel (filters + dropdown) ── */
+.ex-search__panel {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: rgba(10, 12, 22, 0.98);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 194, 255, 0.18);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(0, 194, 255, 0.06);
+  z-index: 50;
+  overflow: hidden;
+  animation: exPanelIn 0.2s ease-out;
+}
+@keyframes exPanelIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Muscle-group filter pills ── */
+.ex-search__filters {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  padding: 10px 10px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.ex-search__filter-pill {
+  display: flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.68rem; font-weight: 600;
+  text-transform: capitalize; letter-spacing: 0.02em;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.ex-search__filter-pill:hover {
+  border-color: rgba(0, 194, 255, 0.3);
+  color: var(--text-primary);
+  background: rgba(0, 194, 255, 0.06);
+}
+.ex-search__filter-pill--active {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+}
+.ex-search__filter-icon {
+  width: 14px; height: 14px; border-radius: 3px;
+}
+
+/* ── Dropdown results list ── */
+.ex-search__dropdown {
+  max-height: 320px; overflow-y: auto;
+  list-style: none; margin: 0; padding: 4px;
+}
+.ex-search__dropdown::-webkit-scrollbar { width: 5px; }
+.ex-search__dropdown::-webkit-scrollbar-thumb {
+  background: rgba(0, 194, 255, 0.18); border-radius: 3px;
+}
+
+.ex-search__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.18s;
+  animation: exItemSlide 0.25s ease-out both;
+}
+@keyframes exItemSlide {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.ex-search__item:hover {
+  background: rgba(0, 194, 255, 0.08);
+  transform: translateX(4px);
+}
+.ex-search__thumb {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.ex-search__thumb--photo {
+  width: 44px; height: 44px; border-radius: 8px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(57,255,20,0.15);
+  box-shadow: 0 0 8px rgba(57,255,20,0.08);
+}
+.ex-search__info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ex-search__name {
+  font-size: 0.88rem; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ex-search__meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ex-search__equip-badge {
+  font-size: 0.68rem; color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  padding: 1px 6px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.ex-search__secondary-tags {
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.ex-search__sec-tag {
+  font-size: 0.6rem; color: var(--neon-orange);
+  background: rgba(255, 106, 0, 0.08);
+  padding: 1px 5px; border-radius: 4px;
+  border: 1px solid rgba(255, 106, 0, 0.15);
+  text-transform: capitalize;
+}
+.ex-search__arrow {
+  color: var(--text-muted); flex-shrink: 0;
+  transition: transform 0.2s, color 0.2s;
+}
+.ex-search__item:hover .ex-search__arrow {
+  color: var(--neon-cyan); transform: translateX(3px);
+}
+.ex-search__empty {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 24px; color: var(--text-muted); font-size: 0.85rem;
+}
+
+.badge--xs { font-size: 0.62rem !important; padding: 1px 6px !important; }
+
+/* ── Exercise card ── */
+.workout-log__exercise-card { padding: var(--space-lg); }
+
+.workout-log__ex-header {
+  display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);
+}
+.workout-log__ex-icon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+}
+.workout-log__ex-icon--photo {
+  width: 48px; height: 48px; border-radius: 8px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(57,255,20,0.15);
+  box-shadow: 0 0 8px rgba(57,255,20,0.08);
+}
+.workout-log__ex-title { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.workout-log__ex-name {
+  font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700;
+  color: var(--text-primary); text-transform: capitalize;
+}
+.workout-log__ex-meta { display: flex; align-items: center; gap: 6px; }
+.workout-log__ex-secondary { font-size: 0.7rem; color: var(--text-muted); }
+
+.workout-log__loading-weights {
+  font-size: 0.75rem; color: var(--neon-cyan); padding: 4px 0 8px;
+  animation: pulse 1.5s infinite;
+}
+
+/* ── Sets table ── */
+.workout-log__sets-table { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-sm); }
+.workout-log__sets-header {
+  display: grid; grid-template-columns: 40px 1fr 1fr 40px; gap: var(--space-sm);
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); padding: 0 4px;
+}
+.workout-log__set-row {
+  display: grid; grid-template-columns: 40px 1fr 1fr 40px; gap: var(--space-sm);
+  align-items: center; padding: 4px; border-radius: var(--radius-sm);
+  transition: background 0.2s;
+}
+.workout-log__set-row:hover { background: rgba(255,255,255,0.03); }
+.workout-log__set-row--done {
+  background: rgba(57, 255, 20, 0.04);
+  border-left: 2px solid var(--neon-green);
+}
+
+.workout-log__set-num {
+  font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--text-muted);
+  font-size: 0.88rem;
+}
+.workout-log__set-input {
+  padding: 0.45rem 0.6rem !important; text-align: center;
+  font-weight: 600; font-size: 0.95rem !important;
+}
+
+.workout-log__check-btn {
+  width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--border-default);
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.25s;
+}
+.workout-log__check-btn:hover { border-color: var(--neon-green); color: var(--neon-green); }
+.workout-log__check-btn--done {
+  background: var(--neon-green); border-color: var(--neon-green); color: #0a0a0f;
+  box-shadow: var(--shadow-glow-green);
+}
+
+/* ── Submit button ── */
+.workout-log__submit { margin-top: var(--space-md); }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .workout-log__stats { flex-direction: column; }
+  .workout-log__manual-row { flex-direction: column; }
+  .ex-search__secondary-tags { display: none; }
+  .ex-search__filters { gap: 3px; padding: 8px 6px 4px; }
+  .ex-search__filter-pill { font-size: 0.62rem; padding: 2px 7px; }
+}

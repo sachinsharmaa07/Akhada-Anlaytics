@@ -1,0 +1,34 @@
+.profile { display: flex; flex-direction: column; gap: var(--space-lg); }
+.profile__layout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
+
+.profile__card { display: flex; flex-direction: column; gap: var(--space-md); align-items: center; }
+
+/* Avatar */
+.profile__avatar {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-glow-green);
+}
+.profile__avatar-initials {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #0a0a0f;
+}
+.profile__email { color: var(--text-muted); font-size: 0.88rem; }
+
+/* Form */
+.profile__form { width: 100%; display: flex; flex-direction: column; gap: var(--space-md); }
+.profile__form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: var(--space-md); }
+
+/* Goals */
+.profile__goals { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; }
+.profile__goal-item {
+  border-left: 3px solid var(--goal-color, var(--neon-green));
+  padding-left: var(--space-md);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+@media (max-width: 640px) { .profile__layout { grid-template-columns: 1fr; } }

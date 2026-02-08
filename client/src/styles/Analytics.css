@@ -1,0 +1,125 @@
+.analytics { display: flex; flex-direction: column; gap: var(--space-lg); }
+
+.analytics__time-btns { display: flex; gap: var(--space-sm); }
+.analytics__time-btn {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: all 0.2s;
+}
+.analytics__time-btn:hover { border-color: var(--border-glow); color: var(--text-primary); }
+.analytics__time-btn--active { border-color: var(--neon-green); color: var(--neon-green); background: rgba(57,255,20,0.08); }
+
+/* ── Body Stats Cards ── */
+.analytics__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+}
+.analytics__stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.analytics__stat-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow-green);
+}
+.analytics__stat-icon { margin-bottom: 2px; }
+.analytics__stat-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.6rem; font-weight: 700;
+}
+.analytics__stat-label {
+  font-size: 0.7rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.analytics__stat-sub {
+  font-size: 0.65rem; color: var(--text-muted);
+}
+.analytics__stat-badge {
+  font-size: 0.6rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 10px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.analytics__stat-badge--normal {
+  color: var(--neon-green);
+  background: rgba(57,255,20,0.08);
+  border: 1px solid rgba(57,255,20,0.15);
+}
+.analytics__stat-badge--underweight {
+  color: var(--neon-cyan);
+  background: rgba(0,240,255,0.08);
+  border: 1px solid rgba(0,240,255,0.15);
+}
+.analytics__stat-badge--overweight {
+  color: var(--neon-orange);
+  background: rgba(255,106,0,0.08);
+  border: 1px solid rgba(255,106,0,0.15);
+}
+.analytics__stat-badge--obese {
+  color: var(--neon-pink);
+  background: rgba(255,45,149,0.08);
+  border: 1px solid rgba(255,45,149,0.15);
+}
+
+/* ── Period Summary Row ── */
+.analytics__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+}
+.analytics__summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  text-align: center;
+}
+.analytics__summary-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--text-primary);
+}
+.analytics__summary-label {
+  font-size: 0.65rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* ── Profile prompt ── */
+.analytics__profile-prompt {
+  display: flex; align-items: center; gap: var(--space-md);
+  border: 1px solid rgba(255,106,0,0.2) !important;
+}
+.analytics__profile-prompt p {
+  font-size: 0.85rem; color: var(--text-secondary); margin: 0;
+}
+
+.analytics__chart-card { padding: var(--space-lg); }
+.analytics__chart-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-md);
+}
+
+@media (min-width: 48rem) {
+  .analytics__stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .analytics__summary-grid { grid-template-columns: repeat(4, 1fr); }
+}

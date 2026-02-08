@@ -1,0 +1,366 @@
+/* ═══════════════════════════════════════════════════════
+   BodyVisualizer — GymVis Muscle Activation System
+   ═══════════════════════════════════════════════════════ */
+
+.body-vis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(0, 60, 120, 0.08) 0%, transparent 65%),
+    linear-gradient(135deg, rgba(8, 12, 22, 0.97) 0%, rgba(14, 18, 32, 0.97) 100%);
+  border: 1px solid rgba(0, 160, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.body-vis__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.body-vis__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 2px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.body-vis__title svg { color: var(--neon-pink); }
+
+.body-vis__subtitle {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.body-vis__model-toggle {
+  padding: 5px 12px;
+  border: 1px solid rgba(0, 160, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(12, 18, 30, 0.8);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.body-vis__model-toggle:hover {
+  border-color: rgba(0, 180, 255, 0.3);
+  color: var(--text-primary);
+}
+
+.body-vis__model-toggle--on {
+  background: rgba(0, 180, 255, 0.1);
+  border-color: rgba(0, 180, 255, 0.25);
+  color: var(--neon-cyan);
+}
+
+/* ── Focus mode radio ── */
+.body-vis__focus {
+  display: flex;
+  gap: 0;
+  background: rgba(10, 16, 28, 0.8);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid rgba(0, 160, 255, 0.12);
+}
+
+.body-vis__focus-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.body-vis__focus-btn:hover { color: var(--text-primary); }
+
+.body-vis__focus-btn--on {
+  background: rgba(0, 180, 255, 0.1);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 180, 255, 0.18);
+  box-shadow: 0 0 14px rgba(0, 180, 255, 0.08);
+}
+
+/* ── Role legend ── */
+.body-vis__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: 7px 14px;
+  background: rgba(10, 16, 28, 0.5);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 160, 255, 0.08);
+}
+
+.body-vis__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.body-vis__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.body-vis__legend-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.body-vis__legend-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Exo 2', sans-serif;
+  min-width: 14px;
+  text-align: center;
+}
+
+/* ── Exercise chips ── */
+.body-vis__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.body-vis__chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: rgba(15, 22, 35, 0.8);
+  border: 1px solid rgba(0, 160, 255, 0.14);
+  border-radius: 20px;
+  font-size: 0.68rem;
+  color: var(--text-primary);
+  transition: all 0.25s;
+}
+
+.body-vis__chip--hidden {
+  opacity: 0.35;
+  border-color: rgba(0, 160, 255, 0.06);
+}
+
+.body-vis__chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 5px rgba(255, 45, 149, 0.4);
+}
+
+.body-vis__chip-name {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.body-vis__chip-btn {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.body-vis__chip-btn:hover { color: var(--neon-cyan); }
+.body-vis__chip-btn--close:hover { color: var(--neon-pink); }
+
+.body-vis__chip--add {
+  cursor: pointer;
+  border-style: dashed;
+  color: var(--text-muted);
+  font-weight: 600;
+  gap: 3px;
+}
+
+.body-vis__chip--add:hover {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+}
+
+/* ── Exercise search ── */
+.body-vis__search {
+  position: relative;
+}
+
+.body-vis__search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.body-vis__search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.body-vis__search-input {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  background: rgba(10, 16, 28, 0.9);
+  border: 1px solid rgba(0, 160, 255, 0.2);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.body-vis__search-input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.12);
+}
+
+.body-vis__search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(14, 20, 34, 0.98);
+  border: 1px solid rgba(0, 160, 255, 0.2);
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.body-vis__search-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(0, 160, 255, 0.06);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.body-vis__search-item:hover {
+  background: rgba(0, 60, 120, 0.2);
+}
+
+.body-vis__search-item:last-child {
+  border-bottom: none;
+}
+
+.body-vis__search-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: var(--space-sm);
+}
+
+/* ── Body container ── */
+.body-vis__body {
+  position: relative;
+  min-height: 300px;
+}
+
+.body-vis__svg-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* When model is shown, make MuscleHeatMap transparent */
+.body-vis__body--model .mhm {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.body-vis__body--model .mhm::before {
+  display: none;
+}
+
+.body-vis__model-img {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 68%;
+  max-height: 380px;
+  opacity: 0.14;
+  filter: grayscale(100%) brightness(0.5) contrast(1.2);
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: radial-gradient(ellipse 70% 85% at 50% 45%, black 40%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 85% at 50% 45%, black 40%, transparent 80%);
+  user-select: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .body-vis {
+    padding: var(--space-md);
+  }
+
+  .body-vis__header {
+    flex-direction: column;
+  }
+
+  .body-vis__focus-btn {
+    font-size: 0.66rem;
+    padding: 6px 10px;
+    gap: 3px;
+  }
+
+  .body-vis__legend {
+    gap: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .body-vis__chip-name {
+    max-width: 100px;
+  }
+}

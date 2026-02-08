@@ -1,0 +1,276 @@
+/* ═══════════════════════════════════════════════════════
+   Onboarding — Multi-step wizard
+   ═══════════════════════════════════════════════════════ */
+
+.onboarding-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-lg);
+}
+
+.onboarding-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-xl);
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+  z-index: 1;
+  animation: fadeSlideUp 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ── Progress bar ── */
+.onboarding-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  position: relative;
+}
+
+.onboarding-progress__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+  flex: 1;
+}
+
+.onboarding-progress__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(40, 50, 70, 0.6);
+  color: var(--text-muted);
+  border: 2px solid rgba(100, 150, 255, 0.12);
+  transition: all 0.35s ease;
+}
+
+.onboarding-progress__step--active .onboarding-progress__dot {
+  background: rgba(0, 180, 255, 0.15);
+  color: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 12px rgba(0, 180, 255, 0.2);
+}
+
+.onboarding-progress__text {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.onboarding-progress__step--active .onboarding-progress__text {
+  color: var(--text-primary);
+}
+
+.onboarding-progress__bar {
+  position: absolute;
+  top: 14px;
+  left: 14%;
+  right: 14%;
+  height: 2px;
+  background: rgba(100, 150, 255, 0.1);
+  border-radius: 1px;
+  z-index: 0;
+}
+
+.onboarding-progress__fill {
+  height: 100%;
+  background: var(--neon-cyan);
+  border-radius: 1px;
+  transition: width 0.45s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 0 8px rgba(0, 180, 255, 0.3);
+}
+
+/* ── Header ── */
+.onboarding-header {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+.onboarding-header__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(0, 180, 255, 0.1);
+  border: 1px solid rgba(0, 180, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-sm);
+  color: var(--neon-cyan);
+}
+
+.onboarding-header__title {
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  font-size: 1.3rem;
+}
+
+.onboarding-header__desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Greeting ── */
+.onboarding-greeting {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.onboarding-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 180, 255, 0.3);
+}
+
+/* ── Body ── */
+.onboarding-body {
+  margin-bottom: var(--space-lg);
+}
+
+.onboarding-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  animation: fadeSlideUp 0.35s ease both;
+}
+
+.onboarding-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+/* ── Username field ── */
+.onboarding-username-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.onboarding-username-at {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.95rem;
+  z-index: 1;
+}
+
+.onboarding-username-input {
+  padding-left: 30px !important;
+}
+
+.onboarding-username-spinner {
+  position: absolute;
+  right: 12px;
+  color: var(--text-muted);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.onboarding-username-ok {
+  position: absolute;
+  right: 12px;
+  color: var(--neon-green);
+}
+
+.onboarding-username-taken {
+  position: absolute;
+  right: 12px;
+  color: var(--neon-pink);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.onboarding-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Gender pills ── */
+.onboarding-gender-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.onboarding-pill {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: rgba(20, 26, 40, 0.5);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.onboarding-pill:hover {
+  border-color: rgba(0, 180, 255, 0.25);
+  color: var(--text-primary);
+}
+
+.onboarding-pill--active {
+  background: rgba(0, 180, 255, 0.12);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 180, 255, 0.12);
+}
+
+/* ── Footer ── */
+.onboarding-footer {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.onboarding-footer .btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .onboarding-card {
+    padding: var(--space-lg);
+  }
+  .onboarding-row {
+    grid-template-columns: 1fr;
+  }
+  .onboarding-progress__text {
+    font-size: 0.56rem;
+  }
+}

@@ -1,0 +1,142 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.home__header { margin-bottom: var(--space-sm); }
+.home__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.home__logo {
+  height: 36px;
+  width: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 135, 0.2));
+}
+.home__brand-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.home__brand-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+.home__brand-accent {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.home__greeting {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.home__greeting span {
+  background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.home__date { color: var(--text-muted); font-size: 0.88rem; margin-top: 2px; }
+
+/* Stat cards */
+.home__stats { margin-bottom: var(--space-sm); }
+.home__stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-md);
+  text-align: center;
+}
+.home__stat-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.home__stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+/* Macro section */
+.home__macro-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+.home__rings {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: var(--space-lg);
+}
+.home__rings-small {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+/* Muscle section */
+.home__muscle-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+/* Muscle body with model PNG */
+.home__muscle-body {
+  position: relative;
+}
+
+.home__muscle-model {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 55%;
+  max-height: 320px;
+  opacity: 0.1;
+  filter: grayscale(100%) brightness(0.45) contrast(1.15);
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: radial-gradient(ellipse 65% 80% at 50% 45%, black 35%, transparent 75%);
+  mask-image: radial-gradient(ellipse 65% 80% at 50% 45%, black 35%, transparent 75%);
+  user-select: none;
+}
+
+/* Small button variant */
+.btn--sm { padding: 0.4rem 1rem !important; font-size: 0.82rem !important; }
+
+@media (min-width: 48rem) {
+  .home__rings { grid-template-columns: repeat(2, 1fr); gap: var(--space-xl); }
+}
+
+@media (min-width: 64rem) {
+  .home__rings { grid-template-columns: repeat(3, 1fr); }
+}

@@ -1,0 +1,61 @@
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Page-level skeleton layouts */
+.skeleton-home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 1.5rem);
+  padding: var(--space-lg, 1.5rem);
+}
+
+.skeleton-header {
+  height: 2rem;
+  width: 60%;
+}
+
+.skeleton-subheader {
+  height: 1rem;
+  width: 30%;
+  margin-top: 0.5rem;
+}
+
+.skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md, 1rem);
+}
+
+.skeleton-stat {
+  height: 80px;
+  border-radius: 12px;
+}
+
+.skeleton-card {
+  height: 200px;
+  border-radius: 16px;
+}
+
+.skeleton-card--tall {
+  height: 360px;
+}
+
+.skeleton-list-item {
+  height: 64px;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+}

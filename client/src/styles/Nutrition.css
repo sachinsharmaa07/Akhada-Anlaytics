@@ -1,0 +1,340 @@
+.nutrition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Macro summary cards */
+.nutrition__macros {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+.nutrition__macro-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.nutrition__macro-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow-green);
+}
+.nutrition__macro-card__value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.nutrition__macro-card__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.nutrition__macro-card__goal { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+/* Pie chart wrapper */
+.nutrition__chart-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Search section */
+.nutrition__search { display: flex; flex-direction: column; gap: var(--space-md); }
+
+/* ══════════════════════════════════════════════════
+   FOOD SEARCH — Enhanced dropdown with animations
+   ══════════════════════════════════════════════════ */
+.food-search { position: relative; width: 100%; }
+
+/* ── Cuisine tabs ── */
+.food-search__cuisine-tabs {
+  display: flex; gap: 4px; margin-bottom: var(--space-sm);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.food-search__cuisine-tabs::-webkit-scrollbar { display: none; }
+.food-search__cuisine-tab {
+  flex: 0 0 auto; padding: 7px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  text-align: center;
+}
+.food-search__cuisine-tab:hover {
+  border-color: rgba(0, 194, 255, 0.3);
+  color: var(--text-primary);
+}
+.food-search__cuisine-tab--active {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.12);
+}
+
+/* ── Search input ── */
+.food-search__input-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.food-search__icon {
+  position: absolute; left: 12px;
+  color: var(--text-muted); pointer-events: none;
+}
+.food-search__input {
+  padding-left: 36px !important; width: 100%;
+}
+.food-search__clear {
+  position: absolute; right: 10px;
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; padding: 4px;
+  border-radius: 50%; transition: all 0.2s;
+}
+.food-search__clear:hover { color: var(--neon-pink); background: rgba(255,45,117,0.1); }
+
+/* ── Combined dropdown panel ── */
+.food-search__panel {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: rgba(10, 12, 22, 0.98);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 194, 255, 0.18);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(0, 194, 255, 0.06);
+  z-index: 50;
+  overflow: hidden;
+  animation: foodPanelIn 0.2s ease-out;
+}
+@keyframes foodPanelIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Category filter pills ── */
+.food-search__categories {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  padding: 10px 10px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.food-search__cat-pill {
+  display: flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.65rem; font-weight: 600;
+  text-transform: capitalize; letter-spacing: 0.02em;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.food-search__cat-pill:hover {
+  border-color: rgba(0, 194, 255, 0.3);
+  color: var(--text-primary);
+  background: rgba(0, 194, 255, 0.06);
+}
+.food-search__cat-pill--active {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.08);
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.12);
+}
+.food-search__cat-emoji { font-size: 0.72rem; }
+
+/* ── Results list ── */
+.food-search__results {
+  max-height: 320px; overflow-y: auto;
+  list-style: none; margin: 0; padding: 4px;
+}
+.food-search__results::-webkit-scrollbar { width: 5px; }
+.food-search__results::-webkit-scrollbar-thumb {
+  background: rgba(0, 194, 255, 0.18); border-radius: 3px;
+}
+
+.food-search__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.18s;
+  animation: foodItemSlide 0.25s ease-out both;
+}
+@keyframes foodItemSlide {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.food-search__item:hover {
+  background: rgba(57, 255, 20, 0.06);
+  transform: translateX(4px);
+}
+
+.food-search__item-emoji {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.food-search__item-info {
+  flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;
+}
+.food-search__item-name {
+  font-size: 0.88rem; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.food-search__item-macros {
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.food-search__macro {
+  font-size: 0.6rem; font-weight: 600;
+  padding: 1px 5px; border-radius: 4px;
+  font-family: 'Rajdhani', sans-serif;
+}
+.food-search__macro--cal {
+  color: var(--neon-pink);
+  background: rgba(255, 45, 149, 0.08);
+  border: 1px solid rgba(255, 45, 149, 0.15);
+}
+.food-search__macro--p {
+  color: var(--neon-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+}
+.food-search__macro--c {
+  color: var(--neon-green);
+  background: rgba(57, 255, 20, 0.08);
+  border: 1px solid rgba(57, 255, 20, 0.15);
+}
+.food-search__macro--f {
+  color: var(--neon-orange);
+  background: rgba(255, 106, 0, 0.08);
+  border: 1px solid rgba(255, 106, 0, 0.15);
+}
+.food-search__item-region {
+  font-size: 0.65rem; color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  padding: 2px 6px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.06);
+  white-space: nowrap; flex-shrink: 0;
+}
+.food-search__loading {
+  padding: 20px; text-align: center;
+  color: var(--neon-cyan); font-size: 0.85rem;
+  animation: pulse 1.5s infinite;
+}
+.food-search__empty {
+  padding: 24px; text-align: center;
+  color: var(--text-muted); font-size: 0.85rem;
+}
+
+/* ── Selected food / quantity card ── */
+.nutrition__quantity-card {
+  border: 1px solid var(--neon-cyan) !important;
+  box-shadow: var(--shadow-glow-cyan);
+  animation: foodPanelIn 0.25s ease-out;
+}
+.nutrition__quantity-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: var(--space-md);
+}
+.nutrition__quantity-header h4 {
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.1rem;
+}
+.nutrition__quantity-row { display: grid; grid-template-columns: 1fr; gap: var(--space-md); }
+
+/* ── Gram equivalent badge ── */
+.nutrition__gram-equiv {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; margin: var(--space-sm) 0;
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: var(--radius-md);
+  color: var(--neon-cyan);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem; font-weight: 600;
+}
+.nutrition__gram-hint {
+  color: var(--text-muted); font-size: 0.75rem; font-weight: 400;
+}
+
+.nutrition__preview {
+  display: flex;
+  gap: var(--space-lg);
+  justify-content: center;
+  margin: var(--space-md) 0;
+  flex-wrap: wrap;
+}
+.nutrition__preview-item {
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.nutrition__preview-value { font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700; }
+.nutrition__preview-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+
+/* Meals list */
+.nutrition__meal-card { margin-bottom: var(--space-md); }
+.nutrition__meal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; padding: var(--space-sm) 0; user-select: none;
+}
+.nutrition__meal-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+.nutrition__meal-items { padding: var(--space-sm) 0; }
+.nutrition__meal-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.nutrition__meal-item:last-child { border-bottom: none; }
+.nutrition__meal-item-name { color: var(--text-primary); font-size: 0.9rem; }
+.nutrition__meal-item-detail { color: var(--text-muted); font-size: 0.78rem; }
+.nutrition__meal-item-actions { display: flex; gap: var(--space-sm); align-items: center; }
+
+/* Vitamins */
+.nutrition__vitamins { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--space-md); }
+.nutrition__vitamin-item { display: flex; flex-direction: column; gap: 4px; }
+.nutrition__vitamin-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.nutrition__vitamin-bar-bg {
+  height: 6px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.nutrition__vitamin-bar {
+  height: 100%;
+  background: var(--neon-green);
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 6px rgba(57,255,20,0.4);
+}
+
+@media (min-width: 30rem) {
+  .nutrition__macros { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 48rem) {
+  .nutrition__quantity-row { grid-template-columns: repeat(3, 1fr); }
+  .nutrition__vitamins { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 64rem) {
+  .nutrition__macros { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .food-search__categories { gap: 3px; padding: 8px 6px 4px; }
+  .food-search__cat-pill { font-size: 0.6rem; padding: 2px 6px; }
+  .food-search__item-region { display: none; }
+  .food-search__cuisine-tabs { gap: 4px; }
+  .food-search__cuisine-tab { font-size: 0.75rem; padding: 6px 8px; }
+}

@@ -1,0 +1,446 @@
+/* ═══════════════════════════════════════════════════════
+   MuscleHeatMap — Holographic Body Visualizer
+   ═══════════════════════════════════════════════════════ */
+
+.mhm {
+  width: 100%;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(0, 60, 120, 0.12) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(8, 13, 24, 0.97) 0%, rgba(14, 18, 30, 0.97) 100%);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border: 1px solid rgba(0, 160, 255, 0.12);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(0, 100, 200, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+/* Ambient glow behind component */
+.mhm::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60%;
+  height: 50%;
+  transform: translate(-50%, -55%);
+  background: radial-gradient(ellipse, rgba(0, 140, 255, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Toggle ── */
+.mhm__toggle {
+  position: relative;
+  display: flex;
+  gap: 0;
+  background: rgba(10, 16, 28, 0.8);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: var(--space-lg);
+  border: 1px solid rgba(0, 160, 255, 0.12);
+  z-index: 1;
+}
+
+.mhm__toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 2;
+}
+
+.mhm__toggle-icon {
+  font-size: 0.6rem;
+  opacity: 0.6;
+}
+
+.mhm__toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.mhm__toggle-btn--on {
+  color: var(--neon-cyan);
+}
+
+/* Sliding indicator */
+.mhm__toggle-slider {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  background: rgba(0, 180, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 180, 255, 0.15);
+  box-shadow: 0 0 14px rgba(0, 180, 255, 0.1);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.mhm__toggle-slider--right {
+  transform: translateX(100%);
+}
+
+/* ── Info bar (hovered muscle) ── */
+.mhm__info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 28px;
+  margin-bottom: var(--space-sm);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.25s ease;
+  z-index: 1;
+  position: relative;
+}
+
+.mhm__info-bar--show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mhm__info-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.mhm__info-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mhm__info-pct {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: 'Exo 2', sans-serif;
+}
+
+/* ── SVG body container ── */
+.mhm__body {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto var(--space-lg);
+  display: flex;
+  justify-content: center;
+  z-index: 1;
+}
+
+.mhm__svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 24px rgba(0, 60, 140, 0.15));
+  overflow: visible;
+}
+
+/* Scan line animation */
+.mhm__scan-line {
+  animation: scanMove 5s ease-in-out infinite;
+  opacity: 0;
+}
+
+@keyframes scanMove {
+  0%   { transform: translateY(10px); opacity: 0; }
+  5%   { opacity: 0.7; }
+  50%  { transform: translateY(430px); opacity: 0.5; }
+  95%  { opacity: 0.7; }
+  100% { transform: translateY(10px); opacity: 0; }
+}
+
+/* Hover text inside SVG */
+.mhm__hover-text {
+  font-family: 'Exo 2', sans-serif;
+  pointer-events: none;
+}
+
+/* ── Muscle path states ── */
+.mp {
+  transition: fill 0.4s ease, filter 0.4s ease, opacity 0.3s ease, stroke 0.3s ease;
+  cursor: pointer;
+}
+
+.mp--off { opacity: 0.6; }
+.mp--low { opacity: 0.85; }
+.mp--mid { opacity: 0.92; }
+.mp--high {
+  opacity: 1;
+  animation: musclePulse 2.8s ease-in-out infinite;
+}
+
+.mp--hov {
+  opacity: 1 !important;
+  stroke: rgba(255, 255, 255, 0.3) !important;
+  stroke-width: 1px !important;
+  filter: brightness(1.35) drop-shadow(0 0 8px currentColor) !important;
+}
+
+@keyframes musclePulse {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.3); }
+}
+
+/* Detail lines (anatomical) */
+.mhm__details {
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* ── Intensity legend bar ── */
+.mhm__legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--space-lg);
+  padding: 8px 14px;
+  background: rgba(10, 16, 28, 0.7);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 160, 255, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.mhm__legend-label {
+  font-size: 0.62rem;
+  color: rgba(140, 170, 210, 0.7);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+  font-family: 'Exo 2', sans-serif;
+}
+
+.mhm__legend-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(15, 22, 35, 0.9);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(0, 160, 255, 0.1);
+}
+
+.mhm__legend-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    rgba(40, 200, 80, 0.25) 0%,
+    rgba(57, 255, 20, 0.45) 25%,
+    rgba(0, 220, 255, 0.6) 50%,
+    rgba(180, 60, 255, 0.75) 75%,
+    rgba(255, 45, 130, 0.9) 100%
+  );
+}
+
+/* ── Muscle card grid ── */
+.mhm__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.mhm__muscle-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(12, 18, 30, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 140, 220, 0.08);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+}
+
+.mhm__muscle-card:hover,
+.mhm__muscle-card--hover {
+  background: rgba(0, 60, 120, 0.15);
+  border-color: rgba(0, 180, 255, 0.22);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 100, 200, 0.12);
+}
+
+.mhm__muscle-card--active {
+  border-color: rgba(0, 160, 255, 0.12);
+}
+
+.mhm__muscle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.mhm__muscle-name {
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-transform: capitalize;
+  white-space: nowrap;
+  min-width: 48px;
+}
+
+.mhm__muscle-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(30, 40, 60, 0.6);
+  overflow: hidden;
+  min-width: 24px;
+}
+
+.mhm__muscle-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease, background 0.5s ease;
+  box-shadow: 0 0 4px rgba(0, 180, 255, 0.2);
+}
+
+.mhm__muscle-val {
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 28px;
+  text-align: right;
+  font-family: 'Exo 2', sans-serif;
+  transition: color 0.3s ease;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .mhm {
+    padding: var(--space-md);
+  }
+
+  .mhm__body {
+    max-width: 260px;
+  }
+
+  .mhm__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mhm__muscle-card {
+    padding: 6px 8px;
+  }
+
+  .mhm__toggle-btn {
+    font-size: 0.72rem;
+    padding: 6px 12px;
+  }
+}
+
+@media (min-width: 640px) {
+  .mhm__grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Role-based muscle activation (GymVis mode)
+   ═══════════════════════════════════════════════════════ */
+
+/* Target muscle pulse — strong pink glow */
+.mp--role-target {
+  animation: targetPulse 2.2s ease-in-out infinite !important;
+}
+
+/* Synergist muscle pulse — subtle cyan */
+.mp--role-syn {
+  animation: synPulse 3s ease-in-out infinite !important;
+}
+
+/* Stabilizer — steady low green */
+.mp--role-stab {
+  opacity: 0.8;
+}
+
+@keyframes targetPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.45) drop-shadow(0 0 10px rgba(255, 45, 149, 0.6)); }
+}
+
+@keyframes synPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.25) drop-shadow(0 0 7px rgba(0, 240, 255, 0.45)); }
+}
+
+/* Role legend (shown in exercise/role mode) */
+.mhm__role-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  padding: 8px 14px;
+  background: rgba(10, 16, 28, 0.7);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 160, 255, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.mhm__role-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.mhm__role-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Role label in muscle card */
+.mhm__muscle-role {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: 'Exo 2', sans-serif;
+  margin-left: auto;
+}
+
+/* Card accents per role */
+.mhm__muscle-card--target {
+  border-color: rgba(255, 45, 149, 0.2) !important;
+}
+
+.mhm__muscle-card--synergist {
+  border-color: rgba(0, 240, 255, 0.18) !important;
+}
+
+.mhm__muscle-card--stabilizer {
+  border-color: rgba(57, 255, 20, 0.15) !important;
+}
