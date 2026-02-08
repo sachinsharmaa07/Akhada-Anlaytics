@@ -6,7 +6,7 @@ import { toast } from '../stores/toastStore';
 import logo from '../images/logo.png';
 import '../styles/Auth.css';
 
-const GOOGLE_CLIENT_ID = '1004581803165-4dq1ee0aeq27cgj7g3pml3ipjojmt6sd.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '1004581803165-4dq1ee0aeq27cgj7g3pml3ipjojmt6sd.apps.googleusercontent.com';
 
 const Login = () => {
   const [email, setEmail] = useState('');
