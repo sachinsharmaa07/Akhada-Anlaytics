@@ -7,6 +7,7 @@ import { getNutritionToday, logFood, deleteNutritionItem, searchFood, searchMexi
 import indianFoodDb from '../data/indianFoodDb';
 import usFoodDb from '../data/usFoodDb';
 import europeanFoodDb from '../data/europeanFoodDb';
+import supplementsFoodDb from '../data/supplementsFoodDb';
 import { toast } from '../stores/toastStore';
 import '../styles/Nutrition.css';
 
@@ -26,6 +27,9 @@ const PIECE_WEIGHTS = {
   'Bagel': 100, 'Muffin': 115, 'Croissant': 60, 'Pancake': 75, 'Waffle': 75,
   'Slice of Pizza': 107, 'Hot Dog': 100, 'Burger Patty': 115, 'Taco': 80,
   'Bread Slice': 30, 'Toast': 30, 'Cookie': 30, 'Brownie': 55, 'Donut': 65,
+  // Supplements
+  'Protein Bar': 60, 'Protein Cookie': 75, 'Protein Brownie': 65,
+  'Protein Muffin': 70, 'Dates': 16, 'Almonds': 14, 'Walnuts': 14, 'Cashews': 15,
 };
 
 const getPieceWeight = (foodName) => {
@@ -50,10 +54,15 @@ const CATEGORY_EMOJI = {
   /* European categories */
   Pasta: '🍝', Pastry: '🥐', Meat: '🥩', Cheese: '🧀', Sausage: '🌭',
   Stew: '🍲',
+  /* Supplements categories */
+  'Protein Powder': '🥤', 'Pre-Workout': '⚡', Creatine: '💊',
+  'Protein Snack': '🍫', Egg: '🥚', Shake: '🧉',
+  'Oats & Cereal': '🥣', 'Nuts & Seeds': '🥜', Supplement: '💊',
 };
 const INDIAN_CATEGORIES = ['All', 'Breakfast', 'Rice', 'Bread', 'Dal', 'Sabzi', 'Non-Veg', 'Snack', 'Sweet', 'Dessert', 'Beverage', 'Tandoori', 'Indo-Chinese', 'Chutney', 'Pickle', 'Accompaniment', 'Salad', 'Regional'];
 const US_CATEGORIES = ['All', 'Breakfast', 'Fast Food', 'Protein', 'Dairy', 'Grain', 'Snack', 'Fruit', 'Vegetable', 'Beverage', 'Dessert', 'Seafood', 'Soup'];
 const EU_CATEGORIES = ['All', 'Breakfast', 'Pasta', 'Bread', 'Pastry', 'Meat', 'Cheese', 'Seafood', 'Sausage', 'Soup', 'Stew', 'Dessert', 'Snack', 'Beverage', 'Salad'];
+const SUPP_CATEGORIES = ['All', 'Protein Powder', 'Pre-Workout', 'Creatine', 'Protein Snack', 'Dairy', 'Oats & Cereal', 'Fruit', 'Nuts & Seeds', 'Egg', 'Meat', 'Grain', 'Shake', 'Supplement'];
 
 /* ── Convert flat food item → nutrients-array format ── */
 const toNutrientsFormat = (item) => ({
@@ -86,11 +95,15 @@ const searchLocalFoods = (db, query, category = 'All', limit = 20) => {
 };
 
 /* ─── Food Search Dropdown ─── */
+/* ── All local databases combined for cross-cuisine search ── */
+const ALL_LOCAL_FOODS = [...indianFoodDb, ...usFoodDb, ...europeanFoodDb, ...supplementsFoodDb];
+
 const CUISINE_CONFIG = [
   { key: 'indian', label: '🇮🇳 Indian', db: indianFoodDb, categories: INDIAN_CATEGORIES, placeholder: 'Search 500+ Indian foods…' },
+  { key: 'supplements', label: '💪 Supplements', db: supplementsFoodDb, categories: SUPP_CATEGORIES, placeholder: 'Protein, creatine, oats, fruits…' },
   { key: 'us', label: '🇺🇸 US', db: usFoodDb, categories: US_CATEGORIES, placeholder: 'Search American foods…' },
   { key: 'european', label: '🇪🇺 European', db: europeanFoodDb, categories: EU_CATEGORIES, placeholder: 'Search European foods…' },
-  { key: 'all', label: '🌍 Global', db: null, categories: null, placeholder: 'Search USDA database…' },
+  { key: 'all', label: '🌍 Global', db: ALL_LOCAL_FOODS, categories: null, placeholder: 'Search all cuisines + USDA…' },
   { key: 'mexican', label: '🇲🇽 Mexican', db: null, categories: null, placeholder: 'Search Mexican foods…' },
 ];
 
@@ -112,15 +125,35 @@ const FoodSearch = React.memo(({ onSelect }) => {
     return n ? n.value : 0;
   }, []);
 
-  // Search effect
+  // Search effect — cross-cuisine: local DB search + API fallback
   useEffect(() => {
     if (activeCuisine?.db) {
       // Instant local search for local databases
-      const r = searchLocalFoods(activeCuisine.db, query, categoryFilter);
-      setResults(r);
-      setOpen(query.length > 0 || categoryFilter !== 'All' || document.activeElement === wrapperRef.current?.querySelector('input'));
+      const r = searchLocalFoods(activeCuisine.db, query, categoryFilter, cuisine === 'all' ? 40 : 20);
+
+      // For 'all' tab with a query, also search USDA API for extra results
+      if (cuisine === 'all' && query.length >= 2) {
+        setResults(r);
+        setOpen(true);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        setLoading(true);
+        searchTimerRef.current = setTimeout(async () => {
+          try {
+            const data = await searchFood(query);
+            const apiResults = data.foods || [];
+            // Merge local + API, dedupe by name
+            const localNames = new Set(r.map(f => f.name.toLowerCase()));
+            const unique = apiResults.filter(f => !localNames.has(f.name.toLowerCase()));
+            setResults([...r, ...unique]);
+          } catch { /* keep local results */ }
+          finally { setLoading(false); }
+        }, 400);
+      } else {
+        setResults(r);
+        setOpen(query.length > 0 || categoryFilter !== 'All' || document.activeElement === wrapperRef.current?.querySelector('input'));
+      }
     } else if (query.length >= 2) {
-      // Debounced API search for other cuisines
+      // Debounced API search for mexican / others
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
       setLoading(true);
       searchTimerRef.current = setTimeout(async () => {

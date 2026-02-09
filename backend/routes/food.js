@@ -35,6 +35,29 @@ const indianFoods = [
   { id: 'ind30', name: 'Tikka Masala', calories: 210, protein: 20, carbs: 10, fats: 10, fiber: 2 }
 ];
 
+const supplementsFoods = [
+  { id: 'sup1', name: 'Whey Protein Isolate (scoop)', calories: 120, protein: 25, carbs: 2, fats: 0.5, fiber: 0 },
+  { id: 'sup2', name: 'Whey Protein Concentrate (scoop)', calories: 130, protein: 24, carbs: 3, fats: 1.5, fiber: 0 },
+  { id: 'sup3', name: 'Casein Protein (scoop)', calories: 120, protein: 24, carbs: 3, fats: 1, fiber: 0 },
+  { id: 'sup4', name: 'Creatine Monohydrate (5g)', calories: 0, protein: 0, carbs: 0, fats: 0, fiber: 0 },
+  { id: 'sup5', name: 'Pre-Workout (scoop)', calories: 10, protein: 0, carbs: 2, fats: 0, fiber: 0 },
+  { id: 'sup6', name: 'BCAA Powder (scoop)', calories: 5, protein: 0, carbs: 0, fats: 0, fiber: 0 },
+  { id: 'sup7', name: 'Mass Gainer (scoop)', calories: 310, protein: 15, carbs: 55, fats: 4, fiber: 2 },
+  { id: 'sup8', name: 'Protein Bar', calories: 210, protein: 20, carbs: 22, fats: 8, fiber: 3 },
+  { id: 'sup9', name: 'Banana', calories: 89, protein: 1.1, carbs: 23, fats: 0.3, fiber: 2.6 },
+  { id: 'sup10', name: 'Oats (Raw 100g)', calories: 389, protein: 13, carbs: 66, fats: 7, fiber: 10 },
+  { id: 'sup11', name: 'Oatmeal Cooked', calories: 68, protein: 2.5, carbs: 12, fats: 1.4, fiber: 2 },
+  { id: 'sup12', name: 'Whole Milk (250ml)', calories: 150, protein: 8, carbs: 12, fats: 8, fiber: 0 },
+  { id: 'sup13', name: 'Greek Yogurt', calories: 97, protein: 9, carbs: 5, fats: 5, fiber: 0 },
+  { id: 'sup14', name: 'Peanut Butter (tbsp)', calories: 94, protein: 4, carbs: 3.2, fats: 8, fiber: 1 },
+  { id: 'sup15', name: 'Almonds (10 pieces)', calories: 80, protein: 3, carbs: 3, fats: 7, fiber: 1.7 },
+  { id: 'sup16', name: 'Boiled Egg', calories: 78, protein: 6, carbs: 0.6, fats: 5.3, fiber: 0 },
+  { id: 'sup17', name: 'Chicken Breast (100g)', calories: 165, protein: 31, carbs: 0, fats: 3.6, fiber: 0 },
+  { id: 'sup18', name: 'Brown Rice (cooked 200g)', calories: 222, protein: 5.2, carbs: 46, fats: 1.8, fiber: 3.6 },
+  { id: 'sup19', name: 'Sweet Potato (100g)', calories: 86, protein: 1.6, carbs: 20, fats: 0.1, fiber: 3 },
+  { id: 'sup20', name: 'Apple', calories: 52, protein: 0.3, carbs: 14, fats: 0.2, fiber: 2.4 },
+];
+
 const mexicanFoods = [
   { id: 'mex1', name: 'Tacos', calories: 226, protein: 10, carbs: 20, fats: 12, fiber: 3 },
   { id: 'mex2', name: 'Burrito', calories: 295, protein: 14, carbs: 38, fats: 10, fiber: 4 },
@@ -159,6 +182,30 @@ router.get('/search/mexican', async (req, res) => {
         ]
       }));
     
+    res.status(200).json({ foods: filtered });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/search/supplements', async (req, res) => {
+  try {
+    const q = (req.query.q || '').toLowerCase();
+    const filtered = supplementsFoods
+      .filter(f => f.name.toLowerCase().includes(q))
+      .slice(0, 20)
+      .map(f => ({
+        id: f.id,
+        name: f.name,
+        nutrients: [
+          { name: 'Calories', value: f.calories, unit: 'kcal' },
+          { name: 'Protein', value: f.protein, unit: 'g' },
+          { name: 'Carbs', value: f.carbs, unit: 'g' },
+          { name: 'Fats', value: f.fats, unit: 'g' },
+          { name: 'Fiber', value: f.fiber, unit: 'g' }
+        ]
+      }));
+
     res.status(200).json({ foods: filtered });
   } catch (error) {
     res.status(500).json({ message: error.message });
