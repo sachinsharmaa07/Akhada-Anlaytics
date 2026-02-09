@@ -17,6 +17,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { setUser, setToken } = useAuthStore();
   const googleBtnRef = useRef(null);
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   /** Handle Google credential response */
   const handleGoogleResponse = useCallback(async (response) => {
@@ -51,12 +52,15 @@ const Login = () => {
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
         auto_select: false,
+        ux_mode: isMobile ? 'redirect' : 'popup',
+        login_uri: window.location.href,
+        itp_support: true,
       });
       if (googleBtnRef.current) {
         window.google.accounts.id.renderButton(googleBtnRef.current, {
           theme: 'filled_black',
           size: 'large',
-          width: '100%',
+          width: googleBtnRef.current.offsetWidth || 300,
           text: 'signin_with',
           shape: 'pill',
           logo_alignment: 'center',
