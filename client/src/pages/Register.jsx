@@ -7,6 +7,7 @@ import logo from '../images/logo.png';
 import '../styles/Auth.css';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '1004581803165-4dq1ee0aeq27cgj7g3pml3ipjojmt6sd.apps.googleusercontent.com';
+const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -23,7 +24,6 @@ const Register = () => {
   const navigate = useNavigate();
   const { setUser, setToken } = useAuthStore();
   const googleBtnRef = useRef(null);
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   /** Handle Google credential response */
   const handleGoogleResponse = useCallback(async (response) => {
@@ -58,7 +58,7 @@ const Register = () => {
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
         auto_select: false,
-        ux_mode: isMobile ? 'redirect' : 'popup',
+        ux_mode: IS_MOBILE ? 'redirect' : 'popup',
         login_uri: window.location.href,
         itp_support: true,
       });
