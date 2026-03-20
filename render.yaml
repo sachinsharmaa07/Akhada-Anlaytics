@@ -20,5 +20,7 @@ services:
         sync: false          # your Vercel URL, e.g. https://akhada-analytics.vercel.app
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: GOOGLE_CLIENT_IDS
+        sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false

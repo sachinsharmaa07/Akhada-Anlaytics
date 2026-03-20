@@ -7,8 +7,6 @@ import logo from '../images/logo.png';
 import '../styles/Auth.css';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '1004581803165-4dq1ee0aeq27cgj7g3pml3ipjojmt6sd.apps.googleusercontent.com';
-const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-const LOGIN_REDIRECT_URI = `${window.location.origin}/login`;
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -53,8 +51,7 @@ const Login = () => {
         client_id: GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
         auto_select: false,
-        ux_mode: IS_MOBILE ? 'redirect' : 'popup',
-        login_uri: LOGIN_REDIRECT_URI,
+        ux_mode: 'popup',
         itp_support: true,
       });
       if (googleBtnRef.current) {
@@ -86,21 +83,6 @@ const Login = () => {
     return () => {
       // Cleanup not strictly needed, but good practice
     };
-  }, [handleGoogleResponse]);
-
-  /** Capture Google redirect response on mobile (credential is appended as a query param) */
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const credential = params.get('credential');
-    if (!credential) return;
-
-    handleGoogleResponse({ credential });
-
-    params.delete('credential');
-    params.delete('g_csrf_token');
-    const qs = params.toString();
-    const cleanUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`;
-    window.history.replaceState({}, document.title, cleanUrl);
   }, [handleGoogleResponse]);
 
   const handleSubmit = async (e) => {

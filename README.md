@@ -216,6 +216,14 @@ JWT_REFRESH_SECRET=your_refresh_secret_here
 CLIENT_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
+# Optional: comma-separated list if you use multiple Google OAuth client IDs
+GOOGLE_CLIENT_IDS=your_web_client_id,your_other_client_id
+```
+
+For the frontend (`client/.env`), also set:
+
+```env
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
 ### 3. Seed the Exercise Database

@@ -11,6 +11,11 @@ const { protect } = require('../middleware/authMiddleware');
 /* ═══════════════════════════════════════════════════════
    Helpers
    ═══════════════════════════════════════════════════════ */
+const GOOGLE_CLIENT_IDS = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ message: errors.array()[0].msg });
@@ -147,22 +152,33 @@ router.post('/google', async (req, res) => {
   try {
     const { credential } = req.body; // Google ID token from frontend
     if (!credential) return res.status(400).json({ message: 'Missing Google credential' });
+    if (!GOOGLE_CLIENT_IDS.length) {
+      return res.status(500).json({ message: 'Google Sign-In is not configured on server' });
+    }
 
     // Verify the Google ID token using Google's tokeninfo endpoint
     // (no extra library needed — just a fetch call)
     const verifyRes = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
     );
     if (!verifyRes.ok) return res.status(401).json({ message: 'Invalid Google token' });
 
     const payload = await verifyRes.json();
 
     // Validate audience matches our client ID
-    if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+    const tokenAudience = typeof payload.aud === 'string' ? payload.aud.trim() : '';
+    if (!GOOGLE_CLIENT_IDS.includes(tokenAudience)) {
       return res.status(401).json({ message: 'Token audience mismatch' });
     }
 
+    if (payload.email_verified !== 'true') {
+      return res.status(401).json({ message: 'Google email is not verified' });
+    }
+
     const { sub: googleId, email, name, picture } = payload;
+    if (!googleId || !email) {
+      return res.status(401).json({ message: 'Google token missing required claims' });
+    }
 
     // ── Find or create user ──────────────────────────
     let user = await User.findOne({
