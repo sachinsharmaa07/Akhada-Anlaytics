@@ -255,6 +255,8 @@ Open **http://localhost:3000** 🎉
 | **Database** | [MongoDB Atlas](https://cloud.mongodb.com) | Free M0 cluster |
 
 > Set `REACT_APP_API_URL` on Vercel and `CLIENT_URL` on Render to connect them.
+>
+> For Google Sign-In, make sure the same `REACT_APP_GOOGLE_CLIENT_ID` is used in frontend env and backend `GOOGLE_CLIENT_IDS`, and add your domains under Google Cloud Console OAuth Web Client "Authorized JavaScript origins" (e.g. `https://akhada-anlaytics.vercel.app` and `http://localhost:3000`).
 
 ---
 

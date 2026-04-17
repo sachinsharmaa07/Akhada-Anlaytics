@@ -3,10 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { register, googleAuth } from '../api/api';
 import useAuthStore from '../stores/authStore';
 import { toast } from '../stores/toastStore';
+import { GOOGLE_CLIENT_ID, GOOGLE_CONFIG_ERROR } from '../config/googleAuth';
 import logo from '../images/logo.png';
 import '../styles/Auth.css';
-
-const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '1004581803165-4dq1ee0aeq27cgj7g3pml3ipjojmt6sd.apps.googleusercontent.com';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -20,14 +19,16 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
   const navigate = useNavigate();
   const { setUser, setToken } = useAuthStore();
   const googleBtnRef = useRef(null);
+  const hasShownGoogleConfigToast = useRef(false);
 
   /** Handle Google credential response */
   const handleGoogleResponse = useCallback(async (response) => {
     setGoogleLoading(true);
-    setError('');
+    setGoogleError('');
     try {
       const data = await googleAuth(response.credential);
       setToken(data.token);
@@ -42,7 +43,7 @@ const Register = () => {
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Google sign-up failed';
-      setError(msg);
+      setGoogleError(msg);
       toast.error(msg);
     } finally {
       setGoogleLoading(false);
@@ -51,6 +52,15 @@ const Register = () => {
 
   /** Load Google Identity Services script */
   useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) {
+      setGoogleError(GOOGLE_CONFIG_ERROR);
+      if (!hasShownGoogleConfigToast.current) {
+        toast.error(GOOGLE_CONFIG_ERROR);
+        hasShownGoogleConfigToast.current = true;
+      }
+      return;
+    }
+
     const initGoogle = () => {
       if (!window.google?.accounts) return;
       window.google.accounts.id.initialize({
@@ -120,8 +130,9 @@ const Register = () => {
 
         {/* Google Sign-Up button */}
         <div className="auth-google-wrap">
-          <div ref={googleBtnRef} className="auth-google-btn" />
+          {GOOGLE_CLIENT_ID && <div ref={googleBtnRef} className="auth-google-btn" />}
           {googleLoading && <div className="auth-google-loading">Signing up with Google...</div>}
+          {googleError && <p className="auth-error">{googleError}</p>}
         </div>
 
         <div className="auth-divider">

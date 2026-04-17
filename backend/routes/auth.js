@@ -316,8 +316,15 @@ router.post('/logout', async (req, res) => {
     if (refreshToken) {
       await RefreshToken.findOneAndUpdate({ token: refreshToken }, { $set: { revokedAt: new Date() } });
     }
-    res.clearCookie('access_token', { path: '/' });
-    res.clearCookie('refresh_token', { path: '/' });
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOpts = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      path: '/',
+    };
+    res.clearCookie('access_token', cookieOpts);
+    res.clearCookie('refresh_token', cookieOpts);
     res.status(200).json({ message: 'Logged out' });
   } catch (error) {
     res.status(500).json({ message: error.message });
