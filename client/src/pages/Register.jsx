@@ -101,6 +101,12 @@ const Register = () => {
         name, email, password, gender,
         age: Number(age), weight: Number(weight), height: Number(height), activityLevel
       });
+      if (data.verificationRequired) {
+        toast.success('Verification code sent. Check your email.');
+        navigate('/verify-email', { state: { email } });
+        return;
+      }
+
       setToken(data.token);
       setUser(data.user);
       toast.success('Account created successfully!');

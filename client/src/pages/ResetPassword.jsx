@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getSecurityQuestion, resetPassword } from '../api/api';
+import { requestPasswordReset, resetPasswordOtp } from '../api/api';
 import { toast } from '../stores/toastStore';
 import logo from '../images/logo.png';
 import '../styles/Auth.css';
@@ -9,22 +9,22 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState('email');
   const [email, setEmail] = useState('');
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
 
-  const handleGetQuestion = async (e) => {
+  const handleRequestCode = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const data = await getSecurityQuestion(email);
-      setQuestion(data.securityQuestion || 'What is your pet name?');
-      setStep('reset');
+      await requestPasswordReset(email);
+      toast.success('Reset code sent to your email.');
+      setStep('otp');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Unable to fetch security question';
+      const msg = err.response?.data?.message || 'Unable to send reset code';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -37,7 +37,7 @@ const ResetPassword = () => {
     setError('');
     setLoading(true);
     try {
-      await resetPassword({ email, answer, newPassword });
+      await resetPasswordOtp({ email, otp, newPassword });
       toast.success('Password updated. Please login again.');
       navigate('/login');
     } catch (err) {
@@ -49,7 +49,22 @@ const ResetPassword = () => {
     }
   };
 
-  const showReset = step === 'reset';
+  const handleResend = async () => {
+    setError('');
+    setResending(true);
+    try {
+      await requestPasswordReset(email);
+      toast.success('Reset code sent to your email.');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Unable to send reset code';
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const showReset = step === 'otp';
 
   return (
     <div className="auth-page">
@@ -65,7 +80,7 @@ const ResetPassword = () => {
         </div>
         <p className="auth-subtitle">Reset your password.</p>
 
-        <form onSubmit={showReset ? handleReset : handleGetQuestion} className="auth-form">
+        <form onSubmit={showReset ? handleReset : handleRequestCode} className="auth-form">
           <div className="auth-form__group">
             <label className="label">Email</label>
             <input
@@ -82,20 +97,16 @@ const ResetPassword = () => {
           {showReset && (
             <>
               <div className="auth-form__group">
-                <label className="label">Security Question</label>
-                <div className="auth-question">{question || 'What is your pet name?'}</div>
-              </div>
-              <div className="auth-form__group">
-                <label className="label">Answer</label>
+                <label className="label">Reset Code</label>
                 <input
                   className="input"
                   type="text"
-                  placeholder="kutta (default)"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
                   required
                 />
-                <span className="auth-hint">Default answer is kutta.</span>
               </div>
               <div className="auth-form__group">
                 <label className="label">New Password</label>
@@ -113,8 +124,18 @@ const ResetPassword = () => {
 
           {error && <p className="auth-error">{error}</p>}
           <button className="btn btn-primary" type="submit" disabled={loading}>
-            {loading ? (showReset ? 'Updating...' : 'Checking...') : (showReset ? 'Reset Password' : 'Next')}
+            {loading ? (showReset ? 'Updating...' : 'Sending...') : (showReset ? 'Reset Password' : 'Send Code')}
           </button>
+          {showReset && (
+            <button
+              className="btn btn-ghost btn--sm"
+              type="button"
+              onClick={handleResend}
+              disabled={resending}
+            >
+              {resending ? 'Sending...' : 'Resend Code'}
+            </button>
+          )}
         </form>
 
         <p className="auth-link">

@@ -33,6 +33,7 @@ const validate = (req, res, next) => {
 };
 
 const normalizeAnswer = (value) => (value || '').trim().toLowerCase();
+const normalizeEmail = (value) => (value || '').trim().toLowerCase();
 
 /** Build JWT access token (short-lived — 15 min) */
 const createAccessToken = (user) =>
@@ -100,14 +101,22 @@ router.post('/register', [
 ], async (req, res) => {
   try {
     const { name, email, password, gender, age, weight, height, activityLevel } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) return res.status(400).json({ message: 'Email already exists' });
 
     const hashed = await bcrypt.hash(password, 12);
     const securityAnswerHash = await bcrypt.hash(DEFAULT_SECURITY_ANSWER, 12);
     const user = await User.create({
-      name, email, password: hashed, gender, age, weight, height, activityLevel,
+      name,
+      email: normalizedEmail,
+      password: hashed,
+      gender,
+      age,
+      weight,
+      height,
+      activityLevel,
       authProvider: 'local',
       onboardingStatus: 'COMPLETE', // local signup collects everything upfront
       securityQuestion: DEFAULT_SECURITY_QUESTION,
@@ -137,8 +146,9 @@ router.post('/login', [
 ], async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    const user = await User.findOne({ email, isDeleted: { $ne: true } });
+    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
     if (!user) return res.status(400).json({ message: 'User not found' });
 
     // If user signed up via Google, prevent local login
@@ -161,6 +171,173 @@ router.post('/login', [
 });
 
 /* ═══════════════════════════════════════════════════════
+   POST /send-verification-otp   — Resend email OTP
+   ═══════════════════════════════════════════════════════ */
+router.post('/send-verification-otp', [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  validate,
+], async (req, res) => {
+  try {
+    if (!mailTransporter) {
+      return res.status(500).json({ message: 'Email service not configured' });
+    }
+
+    const normalizedEmail = normalizeEmail(req.body.email);
+    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.authProvider !== 'local') {
+      return res.status(400).json({ message: 'Google accounts are already verified' });
+    }
+
+    if (user.emailVerified === true) {
+      return res.status(200).json({ message: 'Email already verified' });
+    }
+
+    const otp = await issueEmailVerificationOtp(user);
+    await sendEmail({
+      to: user.email,
+      subject: 'Verify your Akhada Analytics account',
+      text: `Your verification code is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`,
+      html: `<p>Your verification code is <strong>${otp}</strong>.</p><p>This code expires in ${OTP_TTL_MINUTES} minutes.</p>`,
+    });
+
+    res.status(200).json({ message: 'Verification code sent' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
+   POST /verify-email   — Verify OTP + issue tokens
+   ═══════════════════════════════════════════════════════ */
+router.post('/verify-email', [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('otp').trim().notEmpty().withMessage('Verification code is required'),
+  validate,
+], async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
+      .select('+emailVerificationOtpHash');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.authProvider !== 'local') {
+      return res.status(400).json({ message: 'Google accounts are already verified' });
+    }
+
+    if (user.emailVerified !== true) {
+      if (!user.emailVerificationOtpHash || !user.emailVerificationOtpExpires) {
+        return res.status(400).json({ message: 'No active verification code' });
+      }
+      if (Date.now() > new Date(user.emailVerificationOtpExpires).getTime()) {
+        return res.status(400).json({ message: 'Verification code expired' });
+      }
+
+      const isMatch = await bcrypt.compare(String(otp).trim(), user.emailVerificationOtpHash);
+      if (!isMatch) return res.status(400).json({ message: 'Verification code is incorrect' });
+
+      user.emailVerified = true;
+      user.emailVerificationOtpHash = undefined;
+      user.emailVerificationOtpExpires = undefined;
+      await user.save();
+    }
+
+    const accessToken = createAccessToken(user);
+    const refreshToken = await createRefreshToken(user);
+    const legacyToken = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    setCookies(res, accessToken, refreshToken);
+    res.status(200).json({ token: legacyToken, user: safeUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
+   POST /request-password-reset   — Send OTP for reset
+   ═══════════════════════════════════════════════════════ */
+router.post('/request-password-reset', [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  validate,
+], async (req, res) => {
+  try {
+    if (!mailTransporter) {
+      return res.status(500).json({ message: 'Email service not configured' });
+    }
+
+    const normalizedEmail = normalizeEmail(req.body.email);
+    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
+
+    if (!user) {
+      return res.status(200).json({ message: 'If the account exists, a code has been sent.' });
+    }
+
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
+    }
+
+    const otp = await issuePasswordResetOtp(user);
+    await sendEmail({
+      to: user.email,
+      subject: 'Reset your Akhada Analytics password',
+      text: `Your password reset code is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`,
+      html: `<p>Your password reset code is <strong>${otp}</strong>.</p><p>This code expires in ${OTP_TTL_MINUTES} minutes.</p>`,
+    });
+
+    res.status(200).json({ message: 'If the account exists, a code has been sent.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
+   POST /reset-password-otp   — Reset password using OTP
+   ═══════════════════════════════════════════════════════ */
+router.post('/reset-password-otp', [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('otp').trim().notEmpty().withMessage('Reset code is required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  validate,
+], async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
+      .select('+passwordResetOtpHash password authProvider');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
+    }
+
+    if (!user.passwordResetOtpHash || !user.passwordResetOtpExpires) {
+      return res.status(400).json({ message: 'No active reset code' });
+    }
+    if (Date.now() > new Date(user.passwordResetOtpExpires).getTime()) {
+      return res.status(400).json({ message: 'Reset code expired' });
+    }
+
+    const isMatch = await bcrypt.compare(String(otp).trim(), user.passwordResetOtpHash);
+    if (!isMatch) return res.status(400).json({ message: 'Reset code is incorrect' });
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    user.passwordResetOtpHash = undefined;
+    user.passwordResetOtpExpires = undefined;
+    await user.save();
+
+    await RefreshToken.updateMany({ userId: user._id }, { $set: { revokedAt: new Date() } });
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
    POST /security-question   — Fetch security question
    ═══════════════════════════════════════════════════════ */
 router.post('/security-question', [
@@ -169,7 +346,8 @@ router.post('/security-question', [
 ], async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } })
+    const normalizedEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
       .select('securityQuestion authProvider password');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -196,7 +374,8 @@ router.post('/reset-password', [
 ], async (req, res) => {
   try {
     const { email, answer, newPassword } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } })
+    const normalizedEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
       .select('+securityAnswerHash password authProvider securityQuestion');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -284,12 +463,14 @@ router.post('/google', async (req, res) => {
         googleId,
         avatar: picture,
         authProvider: 'google',
+        emailVerified: true,
         onboardingStatus: 'INCOMPLETE',
       });
     } else if (!user.googleId) {
       // Existing local user logging in with Google → link accounts
       user.googleId = googleId;
       user.authProvider = 'google';
+      if (user.emailVerified !== true) user.emailVerified = true;
       if (picture && !user.avatar) user.avatar = picture;
       await user.save();
     }

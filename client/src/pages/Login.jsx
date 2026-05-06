@@ -112,6 +112,11 @@ const Login = () => {
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed';
+      if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        toast.error('Email not verified. Check your inbox for the code.');
+        navigate('/verify-email', { state: { email } });
+        return;
+      }
       setError(msg);
       toast.error(msg);
     } finally {
@@ -162,6 +167,9 @@ const Login = () => {
         </form>
         <p className="auth-link">
           <Link to="/reset-password">Forgot password?</Link>
+        </p>
+        <p className="auth-link">
+          Need to verify? <Link to="/verify-email">Verify email</Link>
         </p>
         <p className="auth-link">
           No account? <Link to="/register">Register</Link>

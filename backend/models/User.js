@@ -15,6 +15,13 @@ const userSchema = new mongoose.Schema({
   securityQuestion: { type: String, default: 'What is your pet name?', trim: true },
   securityAnswerHash: { type: String, select: false },
 
+  // Email verification + OTP password reset
+  emailVerified: { type: Boolean, default: false },
+  emailVerificationOtpHash: { type: String, select: false },
+  emailVerificationOtpExpires: { type: Date },
+  passwordResetOtpHash: { type: String, select: false },
+  passwordResetOtpExpires: { type: Date },
+
   // Onboarding
   onboardingStatus: { type: String, enum: ['INCOMPLETE', 'COMPLETE'], default: 'COMPLETE' },
 
