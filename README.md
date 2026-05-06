@@ -15,6 +15,16 @@
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" />
   <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/sachinsharmaa07/Akhada-Anlaytics/actions/workflows/ci.yml">
+    <img src="https://github.com/sachinsharmaa07/Akhada-Anlaytics/actions/workflows/ci.yml/badge.svg" alt="CI — Test & Build" />
+  </a>
+  <a href="https://github.com/sachinsharmaa07/Akhada-Anlaytics/actions/workflows/deploy.yml">
+    <img src="https://github.com/sachinsharmaa07/Akhada-Anlaytics/actions/workflows/deploy.yml/badge.svg" alt="CD — Deploy" />
+  </a>
 </p>
 
 <p align="center">
@@ -136,7 +146,8 @@ Compound Indexes
 Vercel (Frontend)<br/>
 Render (Backend)<br/>
 MongoDB Atlas (DB)<br/>
-Auto-deploy on push
+GitHub Actions CI/CD<br/>
+Docker Compose
 </td>
 </tr>
 </table>
@@ -147,7 +158,12 @@ Auto-deploy on push
 
 ```
 Akhada Analytics/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml             # CI — lint, build, test, Docker build
+│       └── deploy.yml         # CD — deploy to Render & Vercel
 ├── backend/
+│   ├── Dockerfile             # Backend Docker image
 │   ├── server.js              # Express server entry
 │   ├── seed.js                # Exercise database seeder
 │   ├── middleware/
@@ -166,6 +182,8 @@ Akhada Analytics/
 │       ├── nutrition.js       # Food logging + daily summary
 │       └── food.js            # Multi-cuisine food search
 ├── client/
+│   ├── Dockerfile             # Client Docker image (multi-stage → nginx)
+│   ├── .dockerignore
 │   ├── src/
 │   │   ├── pages/             # 9 pages (Home → Analytics)
 │   │   ├── components/        # Reusable UI (Navbar, HeatMap, MacroRing...)
@@ -174,6 +192,8 @@ Akhada Analytics/
 │   │   ├── api/               # Axios instance + interceptors
 │   │   └── styles/            # CSS modules per page
 │   └── public/
+├── .dockerignore              # Root Docker ignore
+├── docker-compose.yml         # Full-stack local dev (Mongo + Backend + Client)
 ├── render.yaml                # Render deployment blueprint
 ├── .env.example               # Backend env template
 └── package.json
@@ -232,7 +252,7 @@ REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
 node backend/seed.js
 ```
 
-### 4. Run
+### 4. Run (Option A — Manual)
 
 ```bash
 # Terminal 1 — Backend
@@ -243,6 +263,23 @@ cd client && npm start
 ```
 
 Open **http://localhost:3000** 🎉
+
+### 4. Run (Option B — Docker Compose)
+
+Spin up everything with a single command — no local Node.js or MongoDB needed:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+| Container | Port | Description |
+|-----------|------|-------------|
+| `akhada-mongo` | `27017` | MongoDB 7 with health checks |
+| `akhada-backend` | `5001` | Node.js API server |
+| `akhada-client` | `3000` | React app served via nginx |
+
+To stop: `docker compose down` · To wipe data: `docker compose down -v`
 
 ---
 
@@ -257,6 +294,44 @@ Open **http://localhost:3000** 🎉
 > Set `REACT_APP_API_URL` on Vercel and `CLIENT_URL` on Render to connect them.
 >
 > For Google Sign-In, make sure the same `REACT_APP_GOOGLE_CLIENT_ID` is used in frontend env and backend `GOOGLE_CLIENT_IDS`, and add your domains under Google Cloud Console OAuth Web Client "Authorized JavaScript origins" (e.g. `https://akhada-anlaytics.vercel.app` and `http://localhost:3000`).
+
+---
+
+## ⚙️ CI/CD — GitHub Actions
+
+Two workflows automate testing and deployment on every push:
+
+### CI — Test & Build (`.github/workflows/ci.yml`)
+
+Runs on every **push** and **pull request**:
+
+| Job | What it does |
+|-----|--------------|
+| 🔧 **Backend** | Install deps, syntax-check `server.js`, verify all route modules resolve |
+| ⚛️ **Client** | Install deps, production build, run React tests |
+| 🐳 **Docker** | Validate `docker compose build` succeeds |
+
+### CD — Deploy (`.github/workflows/deploy.yml`)
+
+Runs on push to `main` **after CI passes**:
+
+| Job | Target | Mechanism |
+|-----|--------|-----------|
+| 🚀 **Backend** | Render | Deploy Hook (HTTP POST) |
+| 🌐 **Client** | Vercel | Vercel CLI (`vercel deploy --prod`) |
+
+### Required GitHub Secrets
+
+Add these in **Settings → Secrets and Variables → Actions**:
+
+| Secret | Where to get it |
+|--------|----------------|
+| `RENDER_DEPLOY_HOOK_URL` | Render Dashboard → Service → Settings → Deploy Hook |
+| `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | Run `vercel link` in `client/`, check `.vercel/project.json` |
+| `VERCEL_PROJECT_ID` | Same as above |
+
+> **Note:** Both deploy jobs gracefully skip with a helpful message if the secrets are not yet configured.
 
 ---
 
