@@ -19,7 +19,6 @@ const Login = () => {
   const googleBtnRef = useRef(null);
   const hasShownGoogleConfigToast = useRef(false);
 
-  /** Handle Google credential response */
   const handleGoogleResponse = useCallback(async (response) => {
     setGoogleLoading(true);
     setGoogleError('');
@@ -44,7 +43,6 @@ const Login = () => {
     }
   }, [navigate, setToken, setUser]);
 
-  /** Load Google Identity Services script */
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) {
       setGoogleError(GOOGLE_CONFIG_ERROR);
@@ -76,13 +74,11 @@ const Login = () => {
       }
     };
 
-    // If script already loaded
     if (window.google?.accounts) {
       initGoogle();
       return;
     }
 
-    // Load GSI script
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -90,9 +86,7 @@ const Login = () => {
     script.onload = initGoogle;
     document.head.appendChild(script);
 
-    return () => {
-      // Cleanup not strictly needed, but good practice
-    };
+    return () => {};
   }, [handleGoogleResponse]);
 
   const handleSubmit = async (e) => {
@@ -112,11 +106,6 @@ const Login = () => {
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed';
-      if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
-        toast.error('Email not verified. Check your inbox for the code.');
-        navigate('/verify-email', { state: { email } });
-        return;
-      }
       setError(msg);
       toast.error(msg);
     } finally {
@@ -138,7 +127,6 @@ const Login = () => {
         </div>
         <p className="auth-subtitle">Welcome back. Push harder.</p>
 
-        {/* Google Sign-In button */}
         <div className="auth-google-wrap">
           {GOOGLE_CLIENT_ID && <div ref={googleBtnRef} className="auth-google-btn" />}
           {googleLoading && <div className="auth-google-loading">Signing in with Google...</div>}
@@ -165,12 +153,6 @@ const Login = () => {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-        <p className="auth-link">
-          <Link to="/reset-password">Forgot password?</Link>
-        </p>
-        <p className="auth-link">
-          Need to verify? <Link to="/verify-email">Verify email</Link>
-        </p>
         <p className="auth-link">
           No account? <Link to="/register">Register</Link>
         </p>

@@ -3,8 +3,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
-import ResetPassword from './pages/ResetPassword.jsx';
-import VerifyEmail from './pages/VerifyEmail.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import Nutrition from './pages/Nutrition.jsx';
 import Workout from './pages/Workout.jsx';
@@ -24,8 +22,6 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/onboarding" element={
             <ProtectedRoute requireOnboarded={false}>
               <Onboarding />

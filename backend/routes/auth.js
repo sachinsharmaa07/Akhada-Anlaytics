@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken');
-const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -12,19 +11,10 @@ const { protect } = require('../middleware/authMiddleware');
 /* ═══════════════════════════════════════════════════════
    Helpers
    ═══════════════════════════════════════════════════════ */
-const DEFAULT_GOOGLE_CLIENT_ID = '1004581803165-4dq1ee0aeq27cgj7g3pml3ipjojmt6sd.apps.googleusercontent.com';
-const DEFAULT_SECURITY_QUESTION = 'What is your pet name?';
-const DEFAULT_SECURITY_ANSWER = 'kutta';
-const IS_PROD = process.env.NODE_ENV === 'production';
-
 const GOOGLE_CLIENT_IDS = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
-
-const RESOLVED_GOOGLE_CLIENT_IDS = GOOGLE_CLIENT_IDS.length
-  ? GOOGLE_CLIENT_IDS
-  : (IS_PROD ? [] : [DEFAULT_GOOGLE_CLIENT_ID]);
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
@@ -32,7 +22,6 @@ const validate = (req, res, next) => {
   next();
 };
 
-const normalizeAnswer = (value) => (value || '').trim().toLowerCase();
 const normalizeEmail = (value) => (value || '').trim().toLowerCase();
 
 /** Build JWT access token (short-lived — 15 min) */
@@ -66,7 +55,7 @@ const setCookies = (res, accessToken, refreshToken) => {
   const cookieOpts = {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',   // 'none' required for cross-domain (Vercel ↔ Render)
+    sameSite: isProd ? 'none' : 'lax',
     path: '/',
   };
   res.cookie('access_token', accessToken, { ...cookieOpts, maxAge: 15 * 60 * 1000 });
@@ -107,7 +96,6 @@ router.post('/register', [
     if (existing) return res.status(400).json({ message: 'Email already exists' });
 
     const hashed = await bcrypt.hash(password, 12);
-    const securityAnswerHash = await bcrypt.hash(DEFAULT_SECURITY_ANSWER, 12);
     const user = await User.create({
       name,
       email: normalizedEmail,
@@ -118,15 +106,11 @@ router.post('/register', [
       height,
       activityLevel,
       authProvider: 'local',
-      onboardingStatus: 'COMPLETE', // local signup collects everything upfront
-      securityQuestion: DEFAULT_SECURITY_QUESTION,
-      securityAnswerHash,
+      onboardingStatus: 'COMPLETE',
     });
 
     const accessToken = createAccessToken(user);
     const refreshToken = await createRefreshToken(user);
-
-    // Also return Bearer-style token for backwards compatibility
     const legacyToken = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     setCookies(res, accessToken, refreshToken);
@@ -151,7 +135,6 @@ router.post('/login', [
     const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
     if (!user) return res.status(400).json({ message: 'User not found' });
 
-    // If user signed up via Google, prevent local login
     if (user.authProvider === 'google' && !user.password) {
       return res.status(400).json({ message: 'This account uses Google Sign-In. Please login with Google.' });
     }
@@ -171,273 +154,29 @@ router.post('/login', [
 });
 
 /* ═══════════════════════════════════════════════════════
-   POST /send-verification-otp   — Resend email OTP
-   ═══════════════════════════════════════════════════════ */
-router.post('/send-verification-otp', [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  validate,
-], async (req, res) => {
-  try {
-    if (!mailTransporter) {
-      return res.status(500).json({ message: 'Email service not configured' });
-    }
-
-    const normalizedEmail = normalizeEmail(req.body.email);
-    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (user.authProvider !== 'local') {
-      return res.status(400).json({ message: 'Google accounts are already verified' });
-    }
-
-    if (user.emailVerified === true) {
-      return res.status(200).json({ message: 'Email already verified' });
-    }
-
-    const otp = await issueEmailVerificationOtp(user);
-    await sendEmail({
-      to: user.email,
-      subject: 'Verify your Akhada Analytics account',
-      text: `Your verification code is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`,
-      html: `<p>Your verification code is <strong>${otp}</strong>.</p><p>This code expires in ${OTP_TTL_MINUTES} minutes.</p>`,
-    });
-
-    res.status(200).json({ message: 'Verification code sent' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/* ═══════════════════════════════════════════════════════
-   POST /verify-email   — Verify OTP + issue tokens
-   ═══════════════════════════════════════════════════════ */
-router.post('/verify-email', [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('otp').trim().notEmpty().withMessage('Verification code is required'),
-  validate,
-], async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-    const normalizedEmail = normalizeEmail(email);
-
-    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
-      .select('+emailVerificationOtpHash');
-
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.authProvider !== 'local') {
-      return res.status(400).json({ message: 'Google accounts are already verified' });
-    }
-
-    if (user.emailVerified !== true) {
-      if (!user.emailVerificationOtpHash || !user.emailVerificationOtpExpires) {
-        return res.status(400).json({ message: 'No active verification code' });
-      }
-      if (Date.now() > new Date(user.emailVerificationOtpExpires).getTime()) {
-        return res.status(400).json({ message: 'Verification code expired' });
-      }
-
-      const isMatch = await bcrypt.compare(String(otp).trim(), user.emailVerificationOtpHash);
-      if (!isMatch) return res.status(400).json({ message: 'Verification code is incorrect' });
-
-      user.emailVerified = true;
-      user.emailVerificationOtpHash = undefined;
-      user.emailVerificationOtpExpires = undefined;
-      await user.save();
-    }
-
-    const accessToken = createAccessToken(user);
-    const refreshToken = await createRefreshToken(user);
-    const legacyToken = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-    setCookies(res, accessToken, refreshToken);
-    res.status(200).json({ token: legacyToken, user: safeUser(user) });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/* ═══════════════════════════════════════════════════════
-   POST /request-password-reset   — Send OTP for reset
-   ═══════════════════════════════════════════════════════ */
-router.post('/request-password-reset', [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  validate,
-], async (req, res) => {
-  try {
-    if (!mailTransporter) {
-      return res.status(500).json({ message: 'Email service not configured' });
-    }
-
-    const normalizedEmail = normalizeEmail(req.body.email);
-    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
-
-    if (!user) {
-      return res.status(200).json({ message: 'If the account exists, a code has been sent.' });
-    }
-
-    if (user.authProvider === 'google' && !user.password) {
-      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
-    }
-
-    const otp = await issuePasswordResetOtp(user);
-    await sendEmail({
-      to: user.email,
-      subject: 'Reset your Akhada Analytics password',
-      text: `Your password reset code is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`,
-      html: `<p>Your password reset code is <strong>${otp}</strong>.</p><p>This code expires in ${OTP_TTL_MINUTES} minutes.</p>`,
-    });
-
-    res.status(200).json({ message: 'If the account exists, a code has been sent.' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/* ═══════════════════════════════════════════════════════
-   POST /reset-password-otp   — Reset password using OTP
-   ═══════════════════════════════════════════════════════ */
-router.post('/reset-password-otp', [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('otp').trim().notEmpty().withMessage('Reset code is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  validate,
-], async (req, res) => {
-  try {
-    const { email, otp, newPassword } = req.body;
-    const normalizedEmail = normalizeEmail(email);
-
-    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
-      .select('+passwordResetOtpHash password authProvider');
-
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.authProvider === 'google' && !user.password) {
-      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
-    }
-
-    if (!user.passwordResetOtpHash || !user.passwordResetOtpExpires) {
-      return res.status(400).json({ message: 'No active reset code' });
-    }
-    if (Date.now() > new Date(user.passwordResetOtpExpires).getTime()) {
-      return res.status(400).json({ message: 'Reset code expired' });
-    }
-
-    const isMatch = await bcrypt.compare(String(otp).trim(), user.passwordResetOtpHash);
-    if (!isMatch) return res.status(400).json({ message: 'Reset code is incorrect' });
-
-    user.password = await bcrypt.hash(newPassword, 12);
-    user.passwordResetOtpHash = undefined;
-    user.passwordResetOtpExpires = undefined;
-    await user.save();
-
-    await RefreshToken.updateMany({ userId: user._id }, { $set: { revokedAt: new Date() } });
-
-    res.status(200).json({ message: 'Password updated successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/* ═══════════════════════════════════════════════════════
-   POST /security-question   — Fetch security question
-   ═══════════════════════════════════════════════════════ */
-router.post('/security-question', [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  validate,
-], async (req, res) => {
-  try {
-    const { email } = req.body;
-    const normalizedEmail = normalizeEmail(email);
-    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
-      .select('securityQuestion authProvider password');
-
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.authProvider === 'google' && !user.password) {
-      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
-    }
-
-    res.status(200).json({
-      securityQuestion: user.securityQuestion || DEFAULT_SECURITY_QUESTION,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/* ═══════════════════════════════════════════════════════
-   POST /reset-password   — Reset password using security question
-   ═══════════════════════════════════════════════════════ */
-router.post('/reset-password', [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('answer').trim().notEmpty().withMessage('Security answer is required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  validate,
-], async (req, res) => {
-  try {
-    const { email, answer, newPassword } = req.body;
-    const normalizedEmail = normalizeEmail(email);
-    const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } })
-      .select('+securityAnswerHash password authProvider securityQuestion');
-
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.authProvider === 'google' && !user.password) {
-      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
-    }
-
-    const normalizedAnswer = normalizeAnswer(answer);
-    let isValidAnswer = false;
-
-    if (user.securityAnswerHash) {
-      isValidAnswer = await bcrypt.compare(normalizedAnswer, user.securityAnswerHash);
-    } else {
-      isValidAnswer = normalizedAnswer === DEFAULT_SECURITY_ANSWER;
-      if (isValidAnswer) {
-        user.securityAnswerHash = await bcrypt.hash(DEFAULT_SECURITY_ANSWER, 12);
-      }
-    }
-
-    if (!isValidAnswer) return res.status(400).json({ message: 'Security answer is incorrect' });
-
-    user.password = await bcrypt.hash(newPassword, 12);
-    if (!user.securityQuestion) user.securityQuestion = DEFAULT_SECURITY_QUESTION;
-    await user.save();
-
-    await RefreshToken.updateMany({ userId: user._id }, { $set: { revokedAt: new Date() } });
-
-    res.status(200).json({ message: 'Password updated successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/* ═══════════════════════════════════════════════════════
    POST /google   — Google OAuth (receives ID token from frontend)
    ═══════════════════════════════════════════════════════ */
 router.post('/google', async (req, res) => {
   try {
-    const { credential } = req.body; // Google ID token from frontend
+    const { credential } = req.body;
     if (!credential) return res.status(400).json({ message: 'Missing Google credential' });
-    if (!RESOLVED_GOOGLE_CLIENT_IDS.length) {
+    if (!GOOGLE_CLIENT_IDS.length) {
       return res.status(500).json({ message: 'Google Sign-In is not configured on server' });
     }
 
-    // Verify the Google ID token using Google's tokeninfo endpoint
-    let payload;
-    try {
-      const verifyRes = await axios.get('https://oauth2.googleapis.com/tokeninfo', {
-        params: { id_token: credential },
-      });
-      payload = verifyRes.data;
-    } catch (err) {
-      return res.status(401).json({ message: 'Invalid Google token' });
-    }
+    const verifyRes = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+    );
+    if (!verifyRes.ok) return res.status(401).json({ message: 'Invalid Google token' });
 
-    // Validate audience matches our client ID
+    const payload = await verifyRes.json();
+
     const tokenAudience = typeof payload.aud === 'string' ? payload.aud.trim() : '';
-    if (!RESOLVED_GOOGLE_CLIENT_IDS.includes(tokenAudience)) {
+    if (!GOOGLE_CLIENT_IDS.includes(tokenAudience)) {
       return res.status(401).json({ message: 'Token audience mismatch' });
     }
 
-    if (payload.email_verified !== 'true' && payload.email_verified !== true) {
+    if (payload.email_verified !== 'true') {
       return res.status(401).json({ message: 'Google email is not verified' });
     }
 
@@ -446,7 +185,6 @@ router.post('/google', async (req, res) => {
       return res.status(401).json({ message: 'Google token missing required claims' });
     }
 
-    // ── Find or create user ──────────────────────────
     let user = await User.findOne({
       $or: [{ googleId }, { email: email.toLowerCase() }],
       isDeleted: { $ne: true },
@@ -455,7 +193,6 @@ router.post('/google', async (req, res) => {
     let isNewUser = false;
 
     if (!user) {
-      // First time — create partial account
       isNewUser = true;
       user = await User.create({
         name: name || email.split('@')[0],
@@ -463,14 +200,11 @@ router.post('/google', async (req, res) => {
         googleId,
         avatar: picture,
         authProvider: 'google',
-        emailVerified: true,
         onboardingStatus: 'INCOMPLETE',
       });
     } else if (!user.googleId) {
-      // Existing local user logging in with Google → link accounts
       user.googleId = googleId;
       user.authProvider = 'google';
-      if (user.emailVerified !== true) user.emailVerified = true;
       if (picture && !user.avatar) user.avatar = picture;
       await user.save();
     }
@@ -504,7 +238,6 @@ router.post('/onboarding', protect, [
   try {
     const { username, gender, age, weight, height, activityLevel, dailyGoal } = req.body;
 
-    // Check username uniqueness
     const existingUsername = await User.findOne({ username: username.toLowerCase(), _id: { $ne: req.user.id } });
     if (existingUsername) return res.status(400).json({ message: 'Username already taken' });
 
@@ -527,7 +260,6 @@ router.post('/onboarding', protect, [
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Issue fresh tokens with updated onboardingStatus
     const accessToken = createAccessToken(user);
     const refreshToken = await createRefreshToken(user);
     const legacyToken = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -549,7 +281,6 @@ router.post('/refresh', async (req, res) => {
 
     const stored = await RefreshToken.findOne({ token });
     if (!stored || !stored.isActive()) {
-      // Possible token reuse attack — revoke entire family
       if (stored) {
         await RefreshToken.updateMany({ userId: stored.userId }, { $set: { revokedAt: new Date() } });
       }
@@ -559,7 +290,6 @@ router.post('/refresh', async (req, res) => {
     const user = await User.findById(stored.userId).select('-password');
     if (!user || user.isDeleted) return res.status(401).json({ message: 'User not found' });
 
-    // Rotate: revoke old, create new
     stored.revokedAt = new Date();
     const newRefreshToken = await createRefreshToken(user);
     stored.replacedByToken = newRefreshToken;

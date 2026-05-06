@@ -4,7 +4,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 const api = axios.create({
   baseURL: API_BASE,
-  withCredentials: true, // send httpOnly cookies
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
@@ -15,7 +15,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/** Flag to prevent concurrent refresh attempts */
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -29,7 +28,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 and we haven't retried — try refreshing
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -66,7 +64,6 @@ api.interceptors.response.use(
       }
     }
 
-    // Onboarding required
     if (error.response?.status === 403 && error.response?.data?.code === 'ONBOARDING_REQUIRED') {
       if (window.location.pathname !== '/onboarding') {
         window.location.href = '/onboarding';
@@ -95,12 +92,6 @@ export const completeOnboarding = (data) => api.post('/auth/onboarding', data).t
 export const checkUsername = (username) => api.get(`/auth/check-username/${username}`).then(r => r.data);
 export const refreshSession = () => api.post('/auth/refresh').then(r => r.data);
 export const logout = () => api.post('/auth/logout').then(r => r.data);
-export const getSecurityQuestion = (email) => api.post('/auth/security-question', { email }).then(r => r.data);
-export const resetPassword = (data) => api.post('/auth/reset-password', data).then(r => r.data);
-export const sendVerificationOtp = (email) => api.post('/auth/send-verification-otp', { email }).then(r => r.data);
-export const verifyEmailOtp = (data) => api.post('/auth/verify-email', data).then(r => r.data);
-export const requestPasswordReset = (email) => api.post('/auth/request-password-reset', { email }).then(r => r.data);
-export const resetPasswordOtp = (data) => api.post('/auth/reset-password-otp', data).then(r => r.data);
 
 // ── User ──
 export const getProfile = () => api.get('/user/profile').then(r => r.data);
