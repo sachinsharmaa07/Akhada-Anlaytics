@@ -401,6 +401,16 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 720px) {
+  .workout__template-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .legend-card__header { flex-wrap: wrap; }
+  .legend-card__tagline { white-space: normal; }
+  .legend-card__avatar { width: 44px; height: 44px; }
+}
+
 .legend-detail__notes {
   display: flex;
   flex-direction: column;

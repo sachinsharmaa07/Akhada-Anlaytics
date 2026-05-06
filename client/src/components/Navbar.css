@@ -70,3 +70,8 @@
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
+
+@media (max-width: 420px) {
+  .navbar__item { padding: 0.2rem 0.6rem; }
+  .navbar__label { font-size: 0.62rem; }
+}

@@ -9,6 +9,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 4px;
 }
 .home__logo {
@@ -24,7 +25,7 @@
 }
 .home__brand-title {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.35rem;
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
   font-weight: 800;
   letter-spacing: 0.05em;
   color: var(--text-primary);
@@ -43,7 +44,7 @@
 }
 .home__greeting {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.9rem;
+  font-size: clamp(1.35rem, 4vw, 1.9rem);
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -139,4 +140,12 @@
 
 @media (min-width: 64rem) {
   .home__rings { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .home__rings-small { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .home__rings-small { grid-template-columns: 1fr; }
 }

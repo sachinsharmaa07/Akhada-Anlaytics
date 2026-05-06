@@ -65,3 +65,15 @@
     transform: translateX(0);
   }
 }
+
+@media (max-width: 520px) {
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    align-items: stretch;
+  }
+  .toast {
+    width: 100%;
+    max-width: none;
+  }
+}

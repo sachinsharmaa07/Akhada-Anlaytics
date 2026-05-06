@@ -207,7 +207,7 @@ select.input {
 
 .section-title {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.55rem;
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 0.03em;
@@ -269,4 +269,13 @@ select.input {
 }
 @media (max-width: 480px) {
   .main-content { padding: var(--space-sm); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

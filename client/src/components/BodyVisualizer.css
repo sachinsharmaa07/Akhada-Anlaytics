@@ -340,6 +340,12 @@
 }
 
 /* ── Responsive ── */
+@media (max-width: 640px) {
+  .body-vis__header { flex-direction: column; align-items: flex-start; }
+  .body-vis__focus { width: 100%; }
+  .body-vis__legend { flex-wrap: wrap; gap: var(--space-md); }
+}
+
 @media (max-width: 480px) {
   .body-vis {
     padding: var(--space-md);

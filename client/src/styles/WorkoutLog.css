@@ -268,3 +268,19 @@
   .ex-search__filters { gap: 3px; padding: 8px 6px 4px; }
   .ex-search__filter-pill { font-size: 0.62rem; padding: 2px 7px; }
 }
+
+@media (max-width: 640px) {
+  .workout-log__timer {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  .workout-log__sets-header,
+  .workout-log__set-row {
+    grid-template-columns: 32px 1fr 1fr 32px;
+    gap: 6px;
+  }
+  .workout-log__sets-header { font-size: 0.62rem; }
+  .workout-log__set-input { padding: 0.4rem 0.55rem !important; font-size: 0.9rem !important; }
+  .workout-log__check-btn { width: 30px; height: 30px; }
+}
