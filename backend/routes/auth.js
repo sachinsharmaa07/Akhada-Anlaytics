@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken');
+const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -11,16 +12,27 @@ const { protect } = require('../middleware/authMiddleware');
 /* ═══════════════════════════════════════════════════════
    Helpers
    ═══════════════════════════════════════════════════════ */
+const DEFAULT_GOOGLE_CLIENT_ID = '1004581803165-4dq1ee0aeq27cgj7g3pml3ipjojmt6sd.apps.googleusercontent.com';
+const DEFAULT_SECURITY_QUESTION = 'What is your pet name?';
+const DEFAULT_SECURITY_ANSWER = 'kutta';
+const IS_PROD = process.env.NODE_ENV === 'production';
+
 const GOOGLE_CLIENT_IDS = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '')
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
+
+const RESOLVED_GOOGLE_CLIENT_IDS = GOOGLE_CLIENT_IDS.length
+  ? GOOGLE_CLIENT_IDS
+  : (IS_PROD ? [] : [DEFAULT_GOOGLE_CLIENT_ID]);
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ message: errors.array()[0].msg });
   next();
 };
+
+const normalizeAnswer = (value) => (value || '').trim().toLowerCase();
 
 /** Build JWT access token (short-lived — 15 min) */
 const createAccessToken = (user) =>
@@ -93,10 +105,13 @@ router.post('/register', [
     if (existing) return res.status(400).json({ message: 'Email already exists' });
 
     const hashed = await bcrypt.hash(password, 12);
+    const securityAnswerHash = await bcrypt.hash(DEFAULT_SECURITY_ANSWER, 12);
     const user = await User.create({
       name, email, password: hashed, gender, age, weight, height, activityLevel,
       authProvider: 'local',
       onboardingStatus: 'COMPLETE', // local signup collects everything upfront
+      securityQuestion: DEFAULT_SECURITY_QUESTION,
+      securityAnswerHash,
     });
 
     const accessToken = createAccessToken(user);
@@ -146,32 +161,104 @@ router.post('/login', [
 });
 
 /* ═══════════════════════════════════════════════════════
+   POST /security-question   — Fetch security question
+   ═══════════════════════════════════════════════════════ */
+router.post('/security-question', [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  validate,
+], async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } })
+      .select('securityQuestion authProvider password');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
+    }
+
+    res.status(200).json({
+      securityQuestion: user.securityQuestion || DEFAULT_SECURITY_QUESTION,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
+   POST /reset-password   — Reset password using security question
+   ═══════════════════════════════════════════════════════ */
+router.post('/reset-password', [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('answer').trim().notEmpty().withMessage('Security answer is required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  validate,
+], async (req, res) => {
+  try {
+    const { email, answer, newPassword } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } })
+      .select('+securityAnswerHash password authProvider securityQuestion');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(400).json({ message: 'This account uses Google Sign-In. Password reset is not available.' });
+    }
+
+    const normalizedAnswer = normalizeAnswer(answer);
+    let isValidAnswer = false;
+
+    if (user.securityAnswerHash) {
+      isValidAnswer = await bcrypt.compare(normalizedAnswer, user.securityAnswerHash);
+    } else {
+      isValidAnswer = normalizedAnswer === DEFAULT_SECURITY_ANSWER;
+      if (isValidAnswer) {
+        user.securityAnswerHash = await bcrypt.hash(DEFAULT_SECURITY_ANSWER, 12);
+      }
+    }
+
+    if (!isValidAnswer) return res.status(400).json({ message: 'Security answer is incorrect' });
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    if (!user.securityQuestion) user.securityQuestion = DEFAULT_SECURITY_QUESTION;
+    await user.save();
+
+    await RefreshToken.updateMany({ userId: user._id }, { $set: { revokedAt: new Date() } });
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
    POST /google   — Google OAuth (receives ID token from frontend)
    ═══════════════════════════════════════════════════════ */
 router.post('/google', async (req, res) => {
   try {
     const { credential } = req.body; // Google ID token from frontend
     if (!credential) return res.status(400).json({ message: 'Missing Google credential' });
-    if (!GOOGLE_CLIENT_IDS.length) {
+    if (!RESOLVED_GOOGLE_CLIENT_IDS.length) {
       return res.status(500).json({ message: 'Google Sign-In is not configured on server' });
     }
 
     // Verify the Google ID token using Google's tokeninfo endpoint
-    // (no extra library needed — just a fetch call)
-    const verifyRes = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
-    );
-    if (!verifyRes.ok) return res.status(401).json({ message: 'Invalid Google token' });
-
-    const payload = await verifyRes.json();
+    let payload;
+    try {
+      const verifyRes = await axios.get('https://oauth2.googleapis.com/tokeninfo', {
+        params: { id_token: credential },
+      });
+      payload = verifyRes.data;
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid Google token' });
+    }
 
     // Validate audience matches our client ID
     const tokenAudience = typeof payload.aud === 'string' ? payload.aud.trim() : '';
-    if (!GOOGLE_CLIENT_IDS.includes(tokenAudience)) {
+    if (!RESOLVED_GOOGLE_CLIENT_IDS.includes(tokenAudience)) {
       return res.status(401).json({ message: 'Token audience mismatch' });
     }
 
-    if (payload.email_verified !== 'true') {
+    if (payload.email_verified !== 'true' && payload.email_verified !== true) {
       return res.status(401).json({ message: 'Google email is not verified' });
     }
 

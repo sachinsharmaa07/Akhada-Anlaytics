@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
   googleId: { type: String, unique: true, sparse: true },
   avatar: { type: String }, // Google profile picture
 
+  // Security question (password reset)
+  securityQuestion: { type: String, default: 'What is your pet name?', trim: true },
+  securityAnswerHash: { type: String, select: false },
+
   // Onboarding
   onboardingStatus: { type: String, enum: ['INCOMPLETE', 'COMPLETE'], default: 'COMPLETE' },
 

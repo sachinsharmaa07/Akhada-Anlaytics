@@ -95,6 +95,8 @@ export const completeOnboarding = (data) => api.post('/auth/onboarding', data).t
 export const checkUsername = (username) => api.get(`/auth/check-username/${username}`).then(r => r.data);
 export const refreshSession = () => api.post('/auth/refresh').then(r => r.data);
 export const logout = () => api.post('/auth/logout').then(r => r.data);
+export const getSecurityQuestion = (email) => api.post('/auth/security-question', { email }).then(r => r.data);
+export const resetPassword = (data) => api.post('/auth/reset-password', data).then(r => r.data);
 
 // ── User ──
 export const getProfile = () => api.get('/user/profile').then(r => r.data);

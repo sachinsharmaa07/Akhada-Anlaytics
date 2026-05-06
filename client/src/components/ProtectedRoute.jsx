@@ -4,7 +4,7 @@ import useAuthStore from '../stores/authStore';
 import { getProfile } from '../api/api';
 
 const ProtectedRoute = ({ children, requireOnboarded = true }) => {
-  const { user, token, loading, setUser, setLoading } = useAuthStore();
+  const { user, token, loading, setUser, setLoading, setToken } = useAuthStore();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -14,12 +14,13 @@ const ProtectedRoute = ({ children, requireOnboarded = true }) => {
           setUser({ ...data, id: data._id });
         } catch {
           setUser(null);
+          setToken(null);
         }
       }
       setLoading(false);
     };
     fetchUser();
-  }, [token, user, setUser, setLoading]);
+  }, [token, user, setUser, setLoading, setToken]);
 
   if (loading) return <div className="loading-screen">Loading...</div>;
   if (!user || !token) return <Navigate to="/login" />;

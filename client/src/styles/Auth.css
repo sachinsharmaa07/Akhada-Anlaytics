@@ -106,6 +106,21 @@
   border: 1px solid rgba(255,45,149,0.2);
 }
 
+.auth-question {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-default);
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+}
+
+.auth-hint {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 .auth-link {
   text-align: center;
   margin-top: var(--space-lg);
