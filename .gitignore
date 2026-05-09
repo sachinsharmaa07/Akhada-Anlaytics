@@ -3,8 +3,12 @@ node_modules/
 
 # environment
 .env
+.env.ec2
 .env.local
 .env.*.local
+
+# SSH keys
+*.pem
 
 # misc
 .DS_Store

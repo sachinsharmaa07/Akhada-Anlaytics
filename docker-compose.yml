@@ -20,6 +20,7 @@ services:
 
   # ── Backend (Node.js / Express) ──
   backend:
+    image: ${BACKEND_IMAGE:-akhada-backend:local}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -30,9 +31,9 @@ services:
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://mongo:27017/akhada_analytics
-      - PORT=5001
-      - CLIENT_URL=http://localhost:3000
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/akhada_analytics}
+      - PORT=${PORT:-5001}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:3000}
     depends_on:
       mongo:
         condition: service_healthy
@@ -41,12 +42,13 @@ services:
 
   # ── Client (React → nginx) ──
   client:
+    image: ${CLIENT_IMAGE:-akhada-client:local}
     build:
       context: ./client
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_URL: http://localhost:5001/api
-        REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5001/api}
+        REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID:-}
     container_name: akhada-client
     restart: unless-stopped
     ports:

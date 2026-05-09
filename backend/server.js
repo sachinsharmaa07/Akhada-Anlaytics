@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
 
-// Only load .env file in development; in production (Render), env vars are injected by the platform
+// Only load .env file in development; in production, env vars are injected by the platform
 const envPath = path.join(__dirname, '..', '.env');
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath });

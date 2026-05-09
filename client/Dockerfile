@@ -1,17 +1,19 @@
-# ── Client Dockerfile (multi-stage) ──
+# ── Client Dockerfile (multi-stage, optimized) ──
 
 # Stage 1: Build the React app
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
+# Install deps first (layer caching — only re-runs when package files change)
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci && npm cache clean --force
 
+# Copy source
 COPY public/ ./public/
 COPY src/ ./src/
 
-# Build-time env vars (override via docker-compose args)
+# Build-time env vars (override via docker-compose args or CI)
 ARG REACT_APP_API_URL=http://localhost:5001/api
 ARG REACT_APP_GOOGLE_CLIENT_ID=""
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
@@ -19,29 +21,25 @@ ENV REACT_APP_GOOGLE_CLIENT_ID=$REACT_APP_GOOGLE_CLIENT_ID
 
 RUN npm run build
 
-# Stage 2: Serve with nginx
+# Stage 2: Serve with nginx (tiny image ~40MB)
 FROM nginx:stable-alpine
 
-# Custom nginx config for SPA routing
+# Copy built assets
 COPY --from=build /app/build /usr/share/nginx/html
 
-RUN echo 'server { \
-    listen 3000; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location /api { \
-        proxy_pass http://backend:5001; \
-        proxy_http_version 1.1; \
-        proxy_set_header Upgrade $http_upgrade; \
-        proxy_set_header Connection "upgrade"; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-    } \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# Copy nginx config (extracted from inline for maintainability)
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Fix permissions for non-root nginx
+RUN mkdir -p /var/cache/nginx /var/run \
+    && chown -R nginx:nginx /usr/share/nginx/html /etc/nginx/conf.d /var/cache/nginx /var/run
+
+USER nginx
 
 EXPOSE 3000
+
+# Health check: verify nginx is serving content
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

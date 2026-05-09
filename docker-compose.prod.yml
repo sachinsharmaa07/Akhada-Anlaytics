@@ -1,93 +1,92 @@
-# ── Akhada Analytics – Production Docker Compose (AWS EC2) ──
-# Usage: docker compose -f docker-compose.prod.yml up -d --build
+# ── Akhada Analytics – Production Docker Compose (EC2) ──
+# Usage: docker compose -f docker-compose.prod.yml up -d
 
 services:
   # ── MongoDB ──
   mongo:
     image: mongo:7
     container_name: akhada-mongo
-    restart: always
+    restart: unless-stopped
     volumes:
       - mongo_data:/data/db
     networks:
       - akhada-net
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 5
-    # No ports exposed — only accessible internally via akhada-net
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ── Backend (Node.js / Express) ──
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: ${DOCKERHUB_USERNAME}/akhada-backend:latest
     container_name: akhada-backend
-    restart: always
-    expose:
-      - "5001"
+    restart: unless-stopped
     env_file:
-      - .env.prod
+      - .env
     environment:
+      - NODE_ENV=production
       - MONGO_URI=mongodb://mongo:27017/akhada_analytics
       - PORT=5001
-      - NODE_ENV=production
     depends_on:
       mongo:
         condition: service_healthy
     networks:
       - akhada-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # ── Client (React → nginx) ──
+  # ── Client (React → Nginx) ──
   client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        REACT_APP_API_URL: https://${DOMAIN:-localhost}/api
-        REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    image: ${DOCKERHUB_USERNAME}/akhada-client:latest
     container_name: akhada-client
-    restart: always
-    expose:
-      - "3000"
+    restart: unless-stopped
     depends_on:
       - backend
     networks:
       - akhada-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
 
-  # ── Nginx Reverse Proxy (SSL termination) ──
+  # ── Nginx Reverse Proxy (entry point) ──
   nginx:
     image: nginx:stable-alpine
     container_name: akhada-nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - certbot_webroot:/var/www/certbot:ro
     depends_on:
       - client
       - backend
     networks:
       - akhada-net
-
-  # ── Certbot (auto-renew SSL) ──
-  certbot:
-    image: certbot/certbot
-    container_name: akhada-certbot
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - certbot_webroot:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'"
-    depends_on:
-      - nginx
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
 
 volumes:
   mongo_data:
-  certbot_webroot:
 
 networks:
   akhada-net:

@@ -2,9 +2,8 @@
 
 > *"Akhada"* (अखाड़ा) — a traditional Indian wrestling arena. Train like a warrior, track like a scientist.
 
-**Akhada Analytics** is a full-stack, mobile-first fitness intelligence platform that combines workout logging, nutrition tracking, body analytics, and personal record detection into one application. It is built with a **React 19** frontend, **Node.js/Express 5** backend, **MongoDB** database, fully **Dockerized**, and deployed via **Vercel** (client), **Render** (API), and optionally **AWS EC2** — all automated through **GitHub Actions CI/CD**.
+**Akhada Analytics** is a full-stack, mobile-first fitness intelligence platform that combines workout logging, nutrition tracking, body analytics, and personal record detection into one application. It is built with a **React 19** frontend, **Node.js/Express 5** backend, **MongoDB** database, fully **Dockerized**, and deployed via **AWS EC2** with **Docker Compose** and **Amazon ECR** — all automated through **GitHub Actions CI/CD**.
 
-**Live:** [https://akhada-anlaytics.vercel.app](https://akhada-anlaytics.vercel.app)  
 **Repo:** [github.com/sachinsharmaa07/Akhada-Anlaytics](https://github.com/sachinsharmaa07/Akhada-Anlaytics)
 
 ---
@@ -19,7 +18,7 @@
 6. [API Reference](#6-api-reference)
 7. [Docker Setup](#7-docker-setup)
 8. [CI/CD — GitHub Actions](#8-cicd--github-actions)
-9. [Deployment — Vercel & Render](#9-deployment--vercel--render)
+9. [Deployment — AWS EC2](#9-deployment--aws-ec2)
 10. [Environment Variables](#10-environment-variables)
 11. [Project Structure](#11-project-structure)
 
@@ -35,8 +34,8 @@
           ┌──────────────┴──────────────┐
           │                             │
   ┌───────▼────────┐          ┌────────▼─────────┐
-  │  Vercel (CDN)  │          │  Render / AWS EC2 │
-  │  React 19 SPA  │  ─────► │  Express 5 API    │
+  │  AWS EC2 (Docker Compose) │          │  AWS EC2 (Docker Compose) │
+  │  React 19 SPA (nginx)     │  ─────► │  Express 5 API            │
   │  Static Files  │  /api/* │  Port 5001        │
   └────────────────┘          └────────┬──────────┘
                                        │
@@ -49,10 +48,10 @@
 
 | Layer | Technology | Hosting |
 |-------|-----------|---------|
-| Frontend | React 19, React Router 7, Zustand 5, Recharts 3, Framer Motion | Vercel |
-| Backend | Node.js, Express 5, JWT, bcrypt, Helmet, Rate Limiting | Render / AWS EC2 |
+| Frontend | React 19, React Router 7, Zustand 5, Recharts 3, Framer Motion | AWS EC2 (nginx container) |
+| Backend | Node.js, Express 5, JWT, bcrypt, Helmet, Rate Limiting | AWS EC2 |
 | Database | MongoDB 7, Mongoose 9 | MongoDB Atlas / Docker |
-| DevOps | Docker Compose, GitHub Actions, Nginx (prod) | GitHub / AWS |
+| DevOps | Docker Compose, GitHub Actions, Amazon ECR | AWS / GitHub |
 
 ---
 
@@ -124,19 +123,6 @@
 | `legendTemplates.js` | 4 athletes | Chris Bumstead, Ronnie Coleman, Larry Wheels, Jeff Nippard programs |
 | `workoutTemplates.js` | 6 templates | Push, Pull, Legs, Upper, Lower, Full Body |
 
-### Vercel Config (`client/vercel.json`)
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
-  "framework": "create-react-app",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
-```
-The `rewrites` rule enables SPA client-side routing — all paths serve `index.html`.
-
----
-
 ## 3. Backend (Node.js / Express)
 
 ### Tech Stack
@@ -155,7 +141,7 @@ The `rewrites` rule enables SPA client-side routing — all paths serve `index.h
 ### Server Entry (`backend/server.js`)
 
 Key behaviors:
-- Only loads `.env` file if it exists (skips in production — Render injects env vars)
+- Only loads `.env` file if it exists (skips in production — env vars injected by the platform)
 - CORS configured with comma-separated `CLIENT_URL` origins
 - MongoDB connection with 10-connection pool, 5s selection timeout, 45s socket timeout
 - Rate limiter on `/api/auth` routes: 15 requests per 15 minutes per IP
@@ -404,53 +390,53 @@ Adds nginx reverse proxy + certbot for SSL:
 
 Uses `concurrency` with `cancel-in-progress: true` to abort stale CI runs.
 
-### Workflow 2: CD — Deploy to Render & Vercel (`deploy.yml`)
+### Workflow 2: CD — Deploy to AWS EC2 (`deploy.yml`)
 
 **Triggers:** Push to `main` only (after CI gate passes)
 
 | Job | Mechanism | Secrets Needed |
 |-----|-----------|----------------|
-| 🚀 **Backend → Render** | `curl -X POST $RENDER_DEPLOY_HOOK_URL` | `RENDER_DEPLOY_HOOK_URL` |
-| 🌐 **Client → Vercel** | `vercel pull` → `vercel build --prod` → `vercel deploy --prebuilt --prod` | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
-
-Both jobs **gracefully skip** with helpful setup instructions if secrets are not configured.
+| 🐳 **Build & Push → ECR** | Docker build + push (backend + client images) | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ACCOUNT_ID`, `ECR_REPO_BACKEND`, `ECR_REPO_CLIENT`, `REACT_APP_API_URL`, `REACT_APP_GOOGLE_CLIENT_ID` |
+| 🚀 **Deploy → EC2** | SSH + `docker compose pull` + `docker compose up -d` | `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_APP_DIR` |
 
 ### Required GitHub Secrets
 
 | Secret | Source |
 |--------|--------|
-| `RENDER_DEPLOY_HOOK_URL` | Render Dashboard → Service → Settings → Deploy Hook |
-| `VERCEL_TOKEN` | vercel.com/account/tokens |
-| `VERCEL_ORG_ID` | Run `vercel link` in `client/`, check `.vercel/project.json` |
-| `VERCEL_PROJECT_ID` | Same as above |
+| `AWS_ACCESS_KEY_ID` | IAM user access key with ECR permissions |
+| `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
+| `AWS_REGION` | AWS region (for example, `us-east-1`) |
+| `AWS_ACCOUNT_ID` | AWS account ID |
+| `ECR_REPO_BACKEND` | ECR repository name for backend image |
+| `ECR_REPO_CLIENT` | ECR repository name for client image |
+| `REACT_APP_API_URL` | Public API base URL baked into client image |
+| `REACT_APP_GOOGLE_CLIENT_ID` | Google OAuth client ID for client build |
+| `EC2_HOST` | EC2 public host or IP |
+| `EC2_USER` | SSH user (for example, `ec2-user`) |
+| `EC2_SSH_KEY` | Private key for SSH (PEM contents) |
+| `EC2_APP_DIR` | Path to repo on EC2 (for example, `/opt/akhada-analytics`) |
 
 ---
 
-## 9. Deployment — Vercel & Render
+## 9. Deployment — AWS EC2
 
-### Frontend → Vercel
+### Overview
 
-- **Root directory:** `client`
-- **Framework:** Create React App
-- **Build:** `npm run build` → output in `build/`
-- **Routing:** SPA rewrites via `vercel.json` (`/(.*) → /index.html`)
-- **Env vars (Vercel dashboard):** `REACT_APP_API_URL` = `https://your-render-api.onrender.com/api`, `REACT_APP_GOOGLE_CLIENT_ID`
+- Build images in CI and push to Amazon ECR.
+- EC2 pulls the latest images and restarts services with Docker Compose.
 
-### Backend → Render
+### EC2 Setup
 
-- **Config:** `render.yaml` (Blueprint auto-detected)
-- **Runtime:** Node.js
-- **Build:** `npm install`
-- **Start:** `node backend/server.js`
-- **Env vars (set manually):** `MONGO_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CLIENT_URL` (Vercel URL), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_IDS`, `GOOGLE_CLIENT_SECRET`
-- **Plan:** Free tier
+1. Install Docker, Docker Compose, and AWS CLI on the instance.
+2. Attach an IAM role with Amazon ECR read access.
+3. Clone this repo to a directory (for example, `/opt/akhada-analytics`).
+4. Create a `.env` file in that directory with `BACKEND_IMAGE`, `CLIENT_IMAGE`, and backend runtime vars.
+5. Run `docker compose pull` and `docker compose up -d`.
 
-### Database → MongoDB Atlas
+### Notes
 
-- Free M0 cluster
-- Connection string set as `MONGO_URI` on Render
-- Mongoose connection pool: 10 connections
-- Indexes: compound indexes on `{ user, date }` for fast per-user queries
+- Open port 3000 (and 5001 only if you need direct API access).
+- For a custom domain or HTTPS, put a reverse proxy in front of the client container and set `CLIENT_URL` to the public URL.
 
 ---
 
@@ -477,7 +463,7 @@ Both jobs **gracefully skip** with helpful setup instructions if secrets are not
 
 | Variable | Description |
 |----------|-------------|
-| `REACT_APP_API_URL` | Backend API base URL (e.g., `https://api.render.com/api`) |
+| `REACT_APP_API_URL` | Backend API base URL (e.g., `https://your-domain/api`) |
 | `REACT_APP_GOOGLE_CLIENT_ID` | Google OAuth client ID for frontend |
 
 ---
@@ -488,7 +474,7 @@ Both jobs **gracefully skip** with helpful setup instructions if secrets are not
 Akhada Analytics/
 ├── .github/workflows/
 │   ├── ci.yml                    # CI — lint, build, test, Docker build
-│   └── deploy.yml                # CD — deploy to Render & Vercel
+│   └── deploy.yml                # CD — deploy to AWS EC2 + ECR
 ├── backend/
 │   ├── Dockerfile                # Node 20 Alpine production image
 │   ├── server.js                 # Express entry (CORS, Helmet, MongoDB, routes)
@@ -511,7 +497,6 @@ Akhada Analytics/
 ├── client/
 │   ├── Dockerfile                # Multi-stage: React build → nginx serve
 │   ├── .dockerignore
-│   ├── vercel.json               # SPA rewrites for Vercel
 │   ├── package.json              # React 19, Zustand, Recharts, Framer Motion
 │   └── src/
 │       ├── App.jsx               # Router: public (login/register) + protected routes
@@ -524,7 +509,6 @@ Akhada Analytics/
 ├── nginx/default.conf            # Prod reverse proxy (SSL, security headers, gzip)
 ├── docker-compose.yml            # Local dev (Mongo + Backend + Client)
 ├── docker-compose.prod.yml       # Production (+ nginx SSL + certbot)
-├── render.yaml                   # Render deployment blueprint
 ├── .env.example                  # Environment variable template
 ├── .dockerignore
 ├── .gitignore

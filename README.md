@@ -9,9 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="https://akhada-anlaytics.vercel.app">
-    <img src="https://img.shields.io/badge/🌐_Live_Demo-Vercel-black?style=for-the-badge" alt="Live Demo" />
-  </a>
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" />
   <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
@@ -46,60 +43,122 @@ Akhada Analytics is a **full-stack fitness tracking platform** that combines wor
 
 ## 🎯 Key Features
 
-<table>
-<tr>
-<td width="50%">
+## 🌐 Deployment (AWS EC2 + Docker Compose)
 
-### 🏋️ Workout Tracking
-- Log exercises with sets, reps & weight
-- **Auto-fill last-used weights** for quick logging
-- **Personal Record (PR) detection** — automatic
-- Live workout timer with elapsed duration
-- Full workout history with volume tracking
+### Overview
+- Build images in CI and push to Amazon ECR.
+- EC2 pulls the latest images and restarts services with Docker Compose.
 
-</td>
-<td width="50%">
+### One-time EC2 setup
+1. Install Docker, Docker Compose, and AWS CLI on the instance.
+2. Attach an IAM role with Amazon ECR read access.
+3. Clone this repo to a directory (for example, `/opt/akhada-analytics`).
+4. Create a `.env` file in that directory.
 
-### 🍎 Nutrition Logging
-- **500+ Indian foods** with full macros
-- **200+ US & European foods** built-in
-- USDA FoodData Central API integration
-- Smart quantity converter (cups, pieces, grams)
-- Meal-based logging (breakfast, lunch, dinner, snacks)
+Example `.env` (on EC2):
 
-</td>
-</tr>
-<tr>
-<td width="50%">
+```env
+BACKEND_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-backend:latest
+CLIENT_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-client:latest
 
-### 📊 Analytics Dashboard
-- **BMI, TDEE, BMR** auto-calculated
-- Calorie trend charts with goal lines
-- Macro breakdown over time
-- Workout volume progression
-- Goal vs actual intake comparison
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/akhada_analytics
+PORT=5001
+NODE_ENV=production
+JWT_SECRET=your_secret_here
+JWT_REFRESH_SECRET=your_refresh_secret_here
+CLIENT_URL=https://your-domain
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
 
-</td>
-<td width="50%">
+### Deploy on EC2
 
-### 🧬 Body Intelligence
-- **Muscle Heatmap** — 7-day frequency visualization
-- **Interactive Body Visualizer** with muscle activation
-- Primary, synergist & stabilizer muscle mapping
-- Color-coded intensity spectrum
+```bash
+docker compose pull
+## 🌐 Deployment (AWS EC2 + Docker Compose)
 
-</td>
-</tr>
-</table>
+### Overview
+- Build images in CI and push to Amazon ECR.
+- EC2 pulls the latest images and restarts services with Docker Compose.
+
+### One-time EC2 setup
+1. Install Docker, Docker Compose, and AWS CLI on the instance.
+2. Attach an IAM role with Amazon ECR read access.
+3. Clone this repo to a directory (for example, `/opt/akhada-analytics`).
+4. Create a `.env` file in that directory.
+
+Example `.env` (on EC2):
+
+```env
+BACKEND_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-backend:latest
+CLIENT_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-client:latest
+
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/akhada_analytics
+PORT=5001
+NODE_ENV=production
+JWT_SECRET=your_secret_here
+JWT_REFRESH_SECRET=your_refresh_secret_here
+CLIENT_URL=https://your-domain
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+### Deploy on EC2
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Expose port 3000 (and 5001 only if you need direct API access). For a custom domain, put a reverse proxy in front of the client container and set `CLIENT_URL` to the public URL.
 
 ---
 
-## 🏆 Train Like Legends
+## ⚙️ CI/CD — GitHub Actions
 
-Pre-built training programs from legendary athletes:
+Two workflows automate testing and deployment on every push:
 
-| Athlete | Splits Available |
-|---------|-----------------|
+### CI — Test & Build (`.github/workflows/ci.yml`)
+
+Runs on every **push** and **pull request**:
+
+| Job | What it does |
+|-----|--------------|
+| 🔧 **Backend** | Install deps, syntax-check `server.js`, verify all route modules resolve |
+| ⚛️ **Client** | Install deps, production build, run React tests |
+| 🐳 **Docker** | Validate `docker compose build` succeeds |
+
+### CD — Deploy (`.github/workflows/deploy.yml`)
+
+Runs on push to `main` **after CI passes**:
+
+| Job | Target | Mechanism |
+|-----|--------|-----------|
+| 🐳 **Build & Push** | Amazon ECR | Docker build + push (backend + client images) |
+| 🚀 **Deploy** | AWS EC2 | SSH + `docker compose pull` + `docker compose up -d` |
+
+### Required GitHub Secrets
+
+Add these in **Settings → Secrets and Variables → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCESS_KEY_ID` | IAM user access key with ECR permissions |
+| `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
+| `AWS_REGION` | AWS region (for example, `us-east-1`) |
+| `AWS_ACCOUNT_ID` | AWS account ID |
+| `ECR_REPO_BACKEND` | ECR repository name for backend image |
+| `ECR_REPO_CLIENT` | ECR repository name for client image |
+| `REACT_APP_API_URL` | Public API base URL baked into client image |
+| `REACT_APP_GOOGLE_CLIENT_ID` | Google OAuth client ID for client build |
+| `EC2_HOST` | EC2 public host or IP |
+| `EC2_USER` | SSH user (for example, `ec2-user`) |
+| `EC2_SSH_KEY` | Private key for SSH (PEM contents) |
+| `EC2_APP_DIR` | Path to repo on EC2 (for example, `/opt/akhada-analytics`) |
+
+---
+
+## 🔐 Security
 | 🏅 **Chris Bumstead** | Chest & Back, Shoulders & Arms, Hamstrings & Glutes, Quads & Calves, Delts & Arms |
 | 💪 **Ronnie Coleman** | Chest, Back, Shoulders, Arms, Legs |
 | 🔥 **Larry Wheels** | Power Bench, Power Squat, Power Deadlift, Hypertrophy Upper/Lower |
@@ -143,8 +202,8 @@ TTL Indexes<br/>
 Compound Indexes
 </td>
 <td align="center">
-Vercel (Frontend)<br/>
-Render (Backend)<br/>
+AWS EC2 (Docker Compose)<br/>
+Amazon ECR (Images)<br/>
 MongoDB Atlas (DB)<br/>
 GitHub Actions CI/CD<br/>
 Docker Compose
@@ -161,7 +220,7 @@ Akhada Analytics/
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml             # CI — lint, build, test, Docker build
-│       └── deploy.yml         # CD — deploy to Render & Vercel
+│       └── deploy.yml         # CD — deploy to AWS EC2 + ECR
 ├── backend/
 │   ├── Dockerfile             # Backend Docker image
 │   ├── server.js              # Express server entry
@@ -194,7 +253,6 @@ Akhada Analytics/
 │   └── public/
 ├── .dockerignore              # Root Docker ignore
 ├── docker-compose.yml         # Full-stack local dev (Mongo + Backend + Client)
-├── render.yaml                # Render deployment blueprint
 ├── .env.example               # Backend env template
 └── package.json
 ```
