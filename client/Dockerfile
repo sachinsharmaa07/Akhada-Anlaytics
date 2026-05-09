@@ -31,8 +31,9 @@ COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
 # Fix permissions for non-root nginx
-RUN mkdir -p /var/cache/nginx /var/run \
-    && chown -R nginx:nginx /usr/share/nginx/html /etc/nginx/conf.d /var/cache/nginx /var/run
+RUN mkdir -p /var/cache/nginx /var/run /tmp/nginx \
+    && chown -R nginx:nginx /usr/share/nginx/html /etc/nginx/conf.d /var/cache/nginx /var/run /tmp/nginx \
+    && sed -i 's|/run/nginx.pid|/tmp/nginx/nginx.pid|g' /etc/nginx/nginx.conf
 
 USER nginx
 
