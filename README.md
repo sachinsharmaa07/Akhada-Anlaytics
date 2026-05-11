@@ -1,18 +1,20 @@
 <p align="center">
-  <img src="client/src/images/logo.png" alt="Akhada Analytics" width="80" />
+  <img src="client/src/images/logo.png" alt="Akhada Analytics" width="100" style="border-radius: 12px;" />
 </p>
 
-<h1 align="center">Akhada Analytics</h1>
+<h1 align="center">⚡ Akhada Analytics</h1>
 
 <p align="center">
-  <strong>Your Personal Fitness Intelligence Platform</strong>
+  <strong>Your Personal Fitness Intelligence Platform</strong><br/>
+  <em>Track, Analyze, Dominate Your Training Data</em>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" />
   <img src="https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/MongoDB-7-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/AWS-EC2-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS" />
 </p>
 
 <p align="center">
@@ -22,82 +24,465 @@
   <a href="https://github.com/sachinsharmaa07/Akhada-Anlaytics/actions/workflows/deploy.yml">
     <img src="https://github.com/sachinsharmaa07/Akhada-Anlaytics/actions/workflows/deploy.yml/badge.svg" alt="CD — Deploy" />
   </a>
+  <img src="https://img.shields.io/github/languages/top/sachinsharmaa07/Akhada-Anlaytics?style=flat-square&color=F7DF1E" alt="Top Language" />
+  <img src="https://img.shields.io/github/repo-size/sachinsharmaa07/Akhada-Anlaytics?style=flat-square&color=00d4aa" alt="Repo Size" />
+  <img src="https://img.shields.io/github/last-commit/sachinsharmaa07/Akhada-Anlaytics?style=flat-square&color=ff6b6b" alt="Last Commit" />
+</p>
+
+---
+
+## 🎯 What is Akhada Analytics?
+
+**Akhada Analytics** is a full-stack fitness tracking platform that transforms your raw workout data into actionable insights. Whether you're a powerlifter tracking PRs, a bodybuilder monitoring muscle gains, or an endurance athlete optimizing training, Akhada gives you the data science approach to fitness.
+
+> *"Akhada"* (अखाड़ा) — a traditional Indian wrestling arena where warriors train with discipline and purpose. We believe in the same philosophy: **data-driven, goal-oriented training**.
+
+### 💡 Philosophy
+- **Simplicity First** — Log workouts in seconds, not minutes
+- **Visual Intelligence** — See patterns in your data instantly
+- **Science-Backed** — Nutrition tracking aligned with macronutrient science
+- **Privacy Focused** — Your data stays on your server (self-hosted option available)
+
+---
+
+## ✨ Core Features
+
+### 🏋️ Workout Tracking
+- **Exercise Logging** — Log exercises from a catalog of 1000+ exercises with images
+- **Progressive Overload** — Track weight, reps, sets across sessions
+- **Personal Records (PRs)** — Automatically detect and celebrate your PRs
+- **Workout Templates** — Create and reuse custom workout routines
+- **Muscle Group Mapping** — See which muscles you're targeting visually
+- **Historical Analytics** — Review your training timeline with heatmaps
+
+### 🥗 Nutrition Tracking
+- **Food Database** — Access to 10,000+ foods (European, Indian, US cuisines)
+- **Macronutrient Tracking** — Monitor protein, carbs, fats with visual rings
+- **Calorie Counting** — Set daily targets and track adherence
+- **Meal Logging** — Quick log meals by weight (grams/oz)
+- **Supplement Tracking** — Log vitamins and supplements
+- **Daily Summary** — See macro breakdown at a glance
+
+### 📊 Analytics Dashboard
+- **Strength Metrics** — Max lifts, total volume, 1RM estimates
+- **Progress Charts** — Interactive graphs with Recharts (30-day, 90-day, yearly)
+- **Body Visualization** — Visual rep heat maps showing muscle engagement
+- **Goal Tracking** — Set goals and monitor weekly progress
+- **Performance Trends** — Identify weak points and plateaus
+
+### 👤 User Management
+- **Authentication** — Email/password with bcrypt hashing
+- **Google OAuth 2.0** — One-click sign-in with Google
+- **Profile Customization** — Height, weight, age, fitness goals
+- **Session Management** — JWT with refresh token rotation
+- **Data Privacy** — Secure, encrypted password storage
+
+---
+
+## 🏗️ Architecture
+
+### System Design
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        User Browser (Desktop/Mobile)                 │
+└────────────────────────────┬──────────────────────────────────────────┘
+                             │ HTTPS
+                    ┌────────▼─────────┐
+                    │ akhada.duckdns.org│
+                    │  (DuckDNS DNS)    │
+                    └────────┬─────────┘
+                             │
+                    ┌────────▼────────────────────────┐
+                    │ AWS EC2 Instance (Ubuntu 24.04) │
+                    │ IP: 13.127.145.141              │
+                    │                                 │
+                    │  ┌──────────────────────────┐   │
+                    │  │  Nginx (Port 80)         │   │
+                    │  │  • Reverse Proxy         │   │
+                    │  │  • Rate Limiting         │   │
+                    │  │  • Security Headers      │   │
+                    │  │  • Gzip Compression      │   │
+                    │  └──────┬──────┬────────────┘   │
+                    │         │      │                │
+          /api/     │         │      │  /             │
+    ┌─────────────┐ │  ┌──────▼──┐  │  ┌────────────┐│
+    │   Backend   │◄─┼─►│ Docker  │  └─►│   Client   ││
+    │  Node.js    │ │  │ Network │     │ React +   ││
+    │  Port 5001  │ │  │         │     │ Nginx     ││
+    └──────┬──────┘ │  └────┬────┘     └────────────┘│
+           │        │       │                        │
+    ┌──────▼────────┤   ┌───▼──────────────────────┐ │
+    │  MongoDB      │   │ Docker Compose           │ │
+    │  Port 27017   │   │  Orchestrates 4 services │ │
+    │  (Persistent  │   │  • auto-restart          │ │
+    │   Volume)     │   │  • network isolation     │ │
+    │               │   │  • health checks         │ │
+    └───────────────┘   └──────────────────────────┘ │
+                    │                                 │
+                    └─────────────────────────────────┘
+```
+
+### Technology Stack
+
+| Component | Technology | Why This? |
+|-----------|-----------|-----------|
+| **Frontend Framework** | React 19 + JSX | Fast, component-based, huge ecosystem |
+| **Frontend State** | Zustand | Minimal boilerplate, lightweight (~2KB) |
+| **Data Visualization** | Recharts | Responsive charts with zero config |
+| **Animations** | Framer Motion | Smooth, declarative motion library |
+| **HTTP Client** | Axios | Promise-based, request/response interceptors |
+| **Backend Framework** | Express 5 | Lightweight, flexible, ideal for REST APIs |
+| **Database** | MongoDB 7 | Flexible schema, scales horizontally |
+| **ODM** | Mongoose | Schema validation, middleware hooks |
+| **Auth Strategy** | JWT + Refresh Tokens | Stateless, secure, mobile-friendly |
+| **Social Auth** | Google OAuth 2.0 | Reduces friction, secure, industry standard |
+| **API Documentation** | RESTful with endpoints | Easy to test, extends easily |
+| **Containerization** | Docker + Docker Compose | Consistent dev/prod environments |
+| **Web Server** | Nginx | Reverse proxy, rate limiting, compression |
+| **CI/CD** | GitHub Actions | Native to GitHub, free for public repos |
+| **Image Registry** | Docker Hub | Reliable, fast, wide adoption |
+| **Cloud Provider** | AWS EC2 | Flexible, pay-as-you-go, extensive services |
+| **Domain/DNS** | DuckDNS | Free, dynamic DNS with webhooks |
+
+---
+
+## 🚀 How It Works
+
+### 1️⃣ User Registration & Login
+
+```
+Step 1: User signs up (email + password OR Google OAuth)
+        ↓
+Step 2: Password hashed with bcrypt, stored in MongoDB
+        ↓
+Step 3: JWT access token (15 min) + refresh token (7 days) issued
+        ↓
+Step 4: Refresh token stored in HTTP-only cookie
+        ↓
+Step 5: Access token used in Authorization header for API calls
+```
+
+**Key Security:**
+- Passwords never sent in plain text (HTTPS required)
+- Refresh tokens invalidated on logout
+- JWT signed with HS256 algorithm
+- Token leakage mitigated via short access token TTL
+
+---
+
+### 2️⃣ Logging a Workout
+
+```
+Step 1: User selects exercise from 1000+ catalog
+        ↓
+Step 2: Logs weight, reps, sets, notes
+        ↓
+Step 3: Frontend validates input (weight > 0, reps > 0)
+        ↓
+Step 4: POST /api/workout with JWT token
+        ↓
+Step 5: Backend verifies token, saves to MongoDB
+        ↓
+Step 6: If new max weight → mark as PR
+        ↓
+Step 7: Real-time UI updates with toast notification
+```
+
+**Data Structure (MongoDB):**
+```json
+{
+  "_id": "ObjectId",
+  "userId": "user123",
+  "exercise": "Barbell Bench Press",
+  "weight": 100,
+  "reps": 5,
+  "sets": 3,
+  "notes": "Feeling strong today",
+  "muscleGroups": ["Chest", "Triceps"],
+  "timestamp": "2026-05-11T12:00:00Z",
+  "isWeeklyPR": true,
+  "isPR": false
+}
+```
+
+---
+
+### 3️⃣ Analytics Dashboard
+
+```
+Step 1: User navigates to /analytics
+        ↓
+Step 2: Frontend fetches user's workout history (GET /api/workout)
+        ↓
+Step 3: Backend aggregates data:
+        • Total volume (weight × reps × sets)
+        • Max lifts per exercise
+        • Weekly averages
+        • PR timeline
+        ↓
+Step 4: Recharts renders interactive charts (30-day, 90-day, 1-year views)
+        ↓
+Step 5: Heatmap shows muscle group engagement distribution
+        ↓
+Step 6: Progress ring displays weekly goal vs. actual
+```
+
+**Real-Time Updates:** Zustand store instantly updates UI when new workouts logged.
+
+---
+
+### 4️⃣ Nutrition Tracking
+
+```
+Step 1: User searches food (e.g., "Chicken Breast")
+        ↓
+Step 2: API queries local food database (10K+ foods)
+        ↓
+Step 3: User enters serving weight (100g)
+        ↓
+Step 4: Calories + macros auto-calculated
+        ↓
+Step 5: Logged to /api/nutrition with timestamp
+        ↓
+Step 6: Daily totals aggregated, visualized with macro rings
+```
+
+**Macro Ring Formula:**
+```
+Ring Color = {
+  Protein: #FF6B6B (red),
+  Carbs:   #4ECDC4 (teal),
+  Fats:    #FFE66D (yellow)
+}
+
+Ring Fill % = (Logged / Daily Goal) × 100
+```
+
+---
+
+## 🔐 Security & Privacy
+
+| Layer | Measure |
+|-------|---------|
+| **In Transit** | HTTPS/TLS 1.3 (enforced by nginx) |
+| **At Rest** | MongoDB encryption, bcrypt password hashing (10 rounds) |
+| **Authentication** | JWT with HS256 signature, short-lived tokens |
+| **Authorization** | `authMiddleware` verifies JWT on protected routes |
+| **CORS** | Whitelist `akhada.duckdns.org`, `localhost:3000` |
+| **Rate Limiting** | Nginx limits 30 req/s, burst 50 on `/api/*` |
+| **Injection** | Mongoose schema validation prevents NoSQL injection |
+| **Data Validation** | Input sanitized with `express-validator` |
+| **Secrets** | Never committed; injected via `.env` / GitHub Secrets |
+
+---
+
+## 📱 User Interface
+
+### Pages & Routes
+
+| Route | Component | Features |
+|-------|-----------|----------|
+| `/` | Home | Welcome screen, quick stats |
+| `/login` | Login | Email/password + Google OAuth |
+| `/register` | Register | Sign up form with validation |
+| `/workout` | Workout Logger | Exercise search, log interface |
+| `/workout-log` | Workout History | Table view, filter by date/exercise |
+| `/nutrition` | Nutrition Tracker | Food search, daily summary |
+| `/analytics` | Dashboard | Charts, heatmaps, progress rings |
+| `/profile` | User Profile | Settings, personal info, goals |
+| `/onboarding` | Onboarding | First-time user flow (goals, units) |
+
+### UI Components
+
+| Component | Purpose |
+|-----------|---------|
+| `Navbar` | Top navigation, user menu, logout |
+| `BodyVisualizer` | 3D-like muscle group heatmap |
+| `MacroRing` | Circular progress for macros |
+| `MuscleHeatMap` | Weekly muscle engagement chart |
+| `Skeleton` | Loading state placeholder |
+| `Toast` | Success/error notifications |
+| `ProtectedRoute` | Guard unauthenticated access |
+
+---
+
+## 🌍 Deployment
+
+### Production URL
+```
+🌐 http://akhada.duckdns.org
+```
+
+### Deployment Pipeline
+
+**Every push to `main` triggers:**
+
+```
+1. GitHub Actions CI
+   ├─ Backend: npm ci, syntax check
+   ├─ Client: npm ci, npm run build, tests
+   └─ Docker: Build + validate images
+
+2. Docker Hub Push
+   ├─ sachinsharmaa07/akhada-backend:latest + :sha
+   └─ sachinsharmaa07/akhada-client:latest + :sha
+
+3. EC2 Auto-Deploy
+   ├─ SSH into 13.127.145.141
+   ├─ Pull latest images from Docker Hub
+   ├─ docker compose up -d --remove-orphans
+   ├─ Health check: curl /api/health
+   └─ Cleanup old images
+
+⏱️ Typical deploy time: 4-8 minutes (fully automated)
+```
+
+### Local Development
+
+```bash
+# Clone
+git clone https://github.com/sachinsharmaa07/Akhada-Anlaytics.git
+cd Akhada-Anlaytics
+
+# Install dependencies
+npm install
+cd client && npm install && cd ..
+
+# Start (with Docker Compose)
+docker compose up -d
+
+# OR start manually
+# Terminal 1: mongod (MongoDB)
+# Terminal 2: npm run dev (backend on :5001)
+# Terminal 3: cd client && npm start (frontend on :3000)
+```
+
+---
+
+## 📊 Database Schema
+
+### Collections
+
+#### Users
+```javascript
+{
+  _id: ObjectId,
+  email: String (unique),
+  passwordHash: String (bcrypt),
+  googleId: String (optional, unique),
+  firstName: String,
+  lastName: String,
+  height: Number (cm),
+  weight: Number (kg),
+  age: Number,
+  goals: [String], // ["strength", "hypertrophy", "endurance"]
+  preferredUnits: String, // "metric" or "imperial"
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Workouts
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId (ref: Users),
+  exercise: String,
+  weight: Number,
+  reps: Number,
+  sets: Number,
+  notes: String,
+  muscleGroups: [String],
+  timestamp: Date,
+  isWeeklyPR: Boolean,
+  isPR: Boolean
+}
+```
+
+#### NutritionLogs
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId,
+  foodName: String,
+  serving: Number (grams),
+  calories: Number,
+  protein: Number (g),
+  carbs: Number (g),
+  fats: Number (g),
+  timestamp: Date,
+  timestamp: Date
+}
+```
+
+#### PersonalRecords
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId,
+  exercise: String,
+  maxWeight: Number,
+  reps: Number,
+  achievedAt: Date
+}
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Checklist
+- [ ] All tests pass (`npm test`)
+- [ ] No console errors
+- [ ] Code follows project style
+- [ ] Backend + frontend compile without warnings
+- [ ] Updated relevant docs
+
+---
+
+## 📄 License
+
+This project is licensed under the ISC License — see [LICENSE](LICENSE) for details.
+
+---
+
+## 👨‍💻 Author
+
+**Sachin Sharma**
+- GitHub: [@sachinsharmaa07](https://github.com/sachinsharmaa07)
+- Project: [Akhada Analytics](https://github.com/sachinsharmaa07/Akhada-Anlaytics)
+
+---
+
+## 🙏 Acknowledgments
+
+- **Recharts** — Data visualization magic
+- **Framer Motion** — Beautiful animations
+- **MongoDB** — Reliable NoSQL database
+- **Express.js** — Minimalist web framework
+- **React 19** — Modern UI library
+- **Docker** — Containerization standard
+- **GitHub Actions** — CI/CD automation
+
+---
+
+<p align="center">
+  <strong>Made with ❤️ for fitness enthusiasts and data nerds</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/languages/top/sachinsharmaa07/Akhada-Anlaytics?style=flat-square&color=F7DF1E" />
-  <img src="https://img.shields.io/github/repo-size/sachinsharmaa07/Akhada-Anlaytics?style=flat-square&color=00d4aa" />
-  <img src="https://img.shields.io/github/last-commit/sachinsharmaa07/Akhada-Anlaytics?style=flat-square&color=ff6b6b" />
-  <img src="https://img.shields.io/badge/license-ISC-blue?style=flat-square" />
+  <a href="https://github.com/sachinsharmaa07/Akhada-Anlaytics">⭐ Star this repo if you find it useful!</a>
 </p>
 
----
-
-## ⚡ What is Akhada Analytics?
-
-Akhada Analytics is a **full-stack fitness tracking platform** that combines workout logging, nutrition tracking, and body analytics into one sleek, mobile-first application. Built for athletes who want data-driven insights into their training.
-
-> *"Akhada"* (अखाड़ा) — a traditional Indian wrestling arena. Train like a warrior, track like a scientist.
-
----
-
-## 🎯 Key Features
-
-## 🌐 Deployment (AWS EC2 + Docker Compose)
-
-### Overview
-- Build images in CI and push to Amazon ECR.
-- EC2 pulls the latest images and restarts services with Docker Compose.
-
-### One-time EC2 setup
-1. Install Docker, Docker Compose, and AWS CLI on the instance.
-2. Attach an IAM role with Amazon ECR read access.
-3. Clone this repo to a directory (for example, `/opt/akhada-analytics`).
-4. Create a `.env` file in that directory.
-
-Example `.env` (on EC2):
-
-```env
-BACKEND_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-backend:latest
-CLIENT_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-client:latest
-
-MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/akhada_analytics
-PORT=5001
-NODE_ENV=production
-JWT_SECRET=your_secret_here
-JWT_REFRESH_SECRET=your_refresh_secret_here
-CLIENT_URL=https://your-domain
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
-
-### Deploy on EC2
-
-```bash
-docker compose pull
-## 🌐 Deployment (AWS EC2 + Docker Compose)
-
-### Overview
-- Build images in CI and push to Amazon ECR.
-- EC2 pulls the latest images and restarts services with Docker Compose.
-
-### One-time EC2 setup
-1. Install Docker, Docker Compose, and AWS CLI on the instance.
-2. Attach an IAM role with Amazon ECR read access.
-3. Clone this repo to a directory (for example, `/opt/akhada-analytics`).
-4. Create a `.env` file in that directory.
-
-Example `.env` (on EC2):
-
-```env
-BACKEND_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-backend:latest
-CLIENT_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/akhada-client:latest
-
-MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/akhada_analytics
-PORT=5001
-NODE_ENV=production
-JWT_SECRET=your_secret_here
-JWT_REFRESH_SECRET=your_refresh_secret_here
 CLIENT_URL=https://your-domain
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
